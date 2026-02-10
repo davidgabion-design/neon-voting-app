@@ -1,11 +1,15 @@
 # Netlify configuration (relative paths for cross-platform builds)
 
 [build]
-publish = "."
-functions = "netlify/functions"
+  command = "echo 'No build command required for static site'"
+  publish = "."
+  functions = "netlify/functions"
+
+[build.environment]
+  NODE_VERSION = "18"
 
 [[redirects]]
-from = "/api/*"
-to = "/.netlify/functions/:splat"
-status = 200
-force = true
+  from = "/api/*"
+  to = "/.netlify/functions/:splat"
+  status = 200
+  force = true

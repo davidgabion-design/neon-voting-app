@@ -1,0 +1,111 @@
+<section id="guidanceECScreen" class="screen">
+  <div class="card" style="max-width:900px;margin:40px auto">
+
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
+      <h2 style="margin:0">
+        <i class="fas fa-user-shield"></i>
+        <span data-i18n="ec_guidance">EC Guidance & Information</span>
+      </h2>
+
+      <div style="display:flex;gap:8px;align-items:center">
+        <select id="langSelect" class="input" style="max-width:140px;padding:6px 10px">
+          <option value="ENG">🇬🇧 English</option>
+          <option value="SPA">🇪🇸 Español</option>
+          <option value="FRE">🇫🇷 Français</option>
+          <option value="POR">🇵🇹 Português</option>
+          <option value="TWI">🇬🇭 Twi</option>
+        </select>
+        <button class="btn neon-btn" id="downloadGuidancePDF-ec" title="Download this guide as PDF">
+          <i class="fas fa-file-pdf"></i> <span data-i18n="download_guide">Download Guide</span>
+        </button>
+        <button class="btn neon-btn-outline" id="guidance-ec-back">
+          <i class="fas fa-arrow-left"></i> <span data-i18n="back_to_login">Back to Login</span>
+        </button>
+      </div>
+    </div>
+
+    <p class="subtext" style="margin-top:8px" data-i18n="ec_description">
+      Everything you need to know as an Election Commissioner on the Neon Voting System.
+    </p>
+
+    <hr style="margin:18px 0;opacity:.2">
+
+    <!-- EC ROLE & RESPONSIBILITIES -->
+    <div class="section">
+      <h3 data-i18n="your_role_ec">Your Role as Election Commissioner</h3>
+      <p class="subtext" data-i18n="ec_role_desc">
+        As an EC, you are responsible for creating, configuring, and managing elections within your organization. 
+        Your work is reviewed by Super Admin before voting begins to ensure accuracy and fairness.
+      </p>
+    </div>
+
+    <!-- HOW THE SYSTEM WORKS FOR EC -->
+    <div class="section">
+      <h3 data-i18n="election_process">How the Election Process Works</h3>
+      <ol class="subtext">
+        <li data-i18n="ec_step1"><strong>Login</strong> - Use your Organization ID and EC password to access your dashboard</li>
+        <li data-i18n="ec_step2"><strong>Set Up Election</strong> - Add positions, candidates, and voters for your election</li>
+        <li data-i18n="ec_step3"><strong>Submit for Approval</strong> - When ready, submit your election to Super Admin for review</li>
+        <li data-i18n="ec_step4"><strong>Make Corrections (if needed)</strong> - If your election is returned, fix issues and resubmit</li>
+        <li data-i18n="ec_step5"><strong>Monitor Voting</strong> - Once approved, voting opens automatically and you can track turnout</li>
+        <li data-i18n="ec_step6"><strong>View Results</strong> - After voting ends, review outcomes and declare results publicly</li>
+      </ol>
+    </div>
+
+    <!-- BEST PRACTICES -->
+    <div class="section">
+      <h3 data-i18n="best_practices">Best Practices for Election Commissioners</h3>
+      <ul class="subtext">
+        <li data-i18n="ec_practice1">✔ Double-check voter emails/phone numbers before submitting for approval</li>
+        <li data-i18n="ec_practice2">✔ Verify candidate names, positions, and photos are accurate</li>
+        <li data-i18n="ec_practice3">✔ Test your election setup before submitting</li>
+        <li data-i18n="ec_practice4">✔ Respond quickly if Super Admin returns your election for corrections</li>
+        <li data-i18n="ec_practice5">✔ Monitor voter turnout during the voting period</li>
+        <li data-i18n="ec_practice6">✔ Archive completed elections before starting a new one</li>
+      </ul>
+    </div>
+
+    <!-- KEY FEATURES FOR EC -->
+    <div class="section card" style="margin-top:18px">
+      <h3>
+        <i class="fas fa-tools"></i>
+        <span data-i18n="features_available">Features Available to You</span>
+      </h3>
+      <ul class="subtext">
+        <li data-i18n="feature_voters"><strong>Voters Tab</strong> - Add voters individually or in bulk (CSV/Excel)</li>
+        <li data-i18n="feature_positions"><strong>Positions Tab</strong> - Define election positions and vote limits</li>
+        <li data-i18n="feature_candidates"><strong>Candidates Tab</strong> - Add candidates with photos and taglines</li>
+        <li data-i18n="feature_invites"><strong>Invites Tab</strong> - Send voter credentials via email, SMS, or WhatsApp</li>
+        <li data-i18n="feature_outcomes"><strong>Outcomes Tab</strong> - View real-time results and declare winners</li>
+        <li data-i18n="feature_settings"><strong>Settings Tab</strong> - Configure organization details and election type</li>
+        <li data-i18n="feature_approval"><strong>Approval Tab</strong> - Submit elections and track approval status</li>
+      </ul>
+    </div>
+
+    <!-- CONTACT & SUPPORT -->
+    <div class="section" style="margin-top:24px;padding:16px;background:rgba(0,255,255,0.05);border-radius:12px;border:1px solid rgba(0,255,255,0.2)">
+      <h3 style="margin-bottom:10px">
+        <i class="fas fa-headset"></i>
+        <span data-i18n="contact_support">Need Technical Support?</span>
+      </h3>
+      <p class="subtext" style="margin-bottom:12px" data-i18n="for_help">
+        For help with election setup, troubleshooting, or platform questions, contact our support team:
+      </p>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <div style="display:flex;align-items:center;gap:10px">
+          <i class="fas fa-phone" style="color:var(--accent-primary);width:20px"></i>
+          <a href="tel:+233247654381" style="color:var(--text-primary);text-decoration:none">
+            +233 24 765 4381
+          </a>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px">
+          <i class="fas fa-envelope" style="color:var(--accent-primary);width:20px"></i>
+          <a href="mailto:gabiondavidselorm@gmail.com" style="color:var(--text-primary);text-decoration:none">
+            gabiondavidselorm@gmail.com
+          </a>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>

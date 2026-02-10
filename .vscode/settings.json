@@ -1,0 +1,6 @@
+{
+  "liveServer.settings.port": 5501,
+  "js/ts.implicitProjectConfig.checkJs": false,
+  "javascript.validate.enable": false,
+  "editor.linkedEditing": true
+}

@@ -1,0 +1,39 @@
+<section id="votingScreen" class="screen">
+  <div class="card">
+    <div class="section-title">
+      <div>
+        <h2 style="margin:0;font-size:18px"><i class="fas fa-check-to-slot"></i> <span data-i18n="cast_your_vote">Cast Your Vote</span></h2>
+        <div class="subtext" id="votingOrgName">Organization</div>
+      </div>
+      <div class="row">
+        <select id="voterLangSelect" class="input" style="max-width:110px;padding:6px 10px;font-size:13px" title="Change Language">
+          <option value="ENG">🇬🇧 ENG</option>
+          <option value="SPA">🇪🇸 SPA</option>
+          <option value="FRE">🇫🇷 FRE</option>
+          <option value="POR">🇵🇹 POR</option>
+          <option value="TWI">🇬🇭 TWI</option>
+        </select>
+        <button id="voter-back" class="btn neon-btn-outline"><i class="fas fa-arrow-left"></i> <span data-i18n="back">Back</span></button>
+        <button class="btn neon-btn-outline logout-btn"><i class="fas fa-sign-out-alt"></i> <span data-i18n="logout">Logout</span></button>
+      </div>
+    </div>
+
+    <div id="votingCountdown" class="subtext" style="margin:8px 0 14px">
+      <i class="fas fa-sync" style="color: var(--accent); margin-right: 6px;"></i>
+      <span>Your vote will sync instantly with global dashboard</span>
+    </div>
+
+    <!-- Voting Interface -->
+    <div id="ballotContainer"></div>
+
+    <div style="margin-top:14px">
+      <button class="btn btn-block neon-btn" onclick="submitVote()">
+        <i class="fas fa-paper-plane"></i> <span data-i18n="submit_vote">Submit Vote</span>
+      </button>
+      <div class="subtext" style="margin-top:8px">
+        <i class="fas fa-info-circle" style="margin-right: 6px;"></i>
+        Your vote syncs instantly with the global dashboard.
+      </div>
+    </div>
+  </div>
+</section>

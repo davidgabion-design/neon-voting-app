@@ -1,0 +1,164 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ✅ Helper functions for approval workflow
+    function isApprovalEditable(orgData) {
+      // Allow editing if status is draft, rejected, or not set
+      return !orgData.approval.status 
+        || orgData.approval.status == 'draft' 
+        || orgData.approval.status == 'rejected';
+    }
+    
+    function isSubmittingForApproval(orgData, incomingData) {
+      // Allow EC to submit for approval (change from draft/rejected to pending)
+      return (!orgData.approval.status || orgData.approval.status in ['draft', 'rejected'])
+        && incomingData.approval.status == 'pending';
+    }
+    
+    function isSuperAdminApprovalChange(orgData, incomingData) {
+      // SuperAdmin can change approval status (pending → approved/rejected)
+      // In production, check auth.token.role == 'superadmin'
+      return orgData.approval.status == 'pending' 
+        && incomingData.approval.status in ['approved', 'rejected'];
+    }
+
+    // Meta collection for super admin credentials
+    match /meta/{docId} {
+      allow read: if true;  // Allow Super Admin login check
+      allow write: if true; // Allow Super Admin creation (in production, restrict this)
+    }
+    
+    // Guidance analytics collection at meta/analytics/guidance_views
+    match /meta/analytics/guidance_views/{viewId} {
+      allow read: if true;  // Allow Super Admin to view analytics
+      allow create: if true; // Allow system to track guidance views
+      allow update, delete: if false; // Immutable analytics log
+    }
+    
+    // Activity logs collection at meta/activity/logs
+    match /meta/activity/logs/{logId} {
+      allow read: if true;  // Allow Super Admin to view activity feed
+      allow create: if true; // Allow system to log activities
+      allow update, delete: if false; // Immutable activity log
+    }
+    
+    // Audit logs collection at meta/audit/logs
+    match /meta/audit/logs/{logId} {
+      allow read: if true;  // Allow Super Admin to view audit trail
+      allow create: if true; // Allow system to log audit events
+      allow update, delete: if false; // Immutable audit log
+    }
+
+    // ✅ PATCH 6: Organization-level rules with approval workflow enforcement
+    match /organizations/{orgId} {
+      // Public read for voter login and results viewing
+      allow read: if true;
+      
+      // ✅ Allow updates when:
+      // 1. EC editing while approval allows (draft/rejected/not set)
+      // 2. EC submitting for approval (draft/rejected → pending)
+      // 3. SuperAdmin changing approval status (pending → approved/rejected)
+      // 4. SuperAdmin editing org metadata without changing approval status
+      allow update: if isApprovalEditable(resource.data) 
+        || isSubmittingForApproval(resource.data, request.resource.data)
+        || isSuperAdminApprovalChange(resource.data, request.resource.data)
+        || (request.resource.data.approval.status == resource.data.approval.status);
+      
+      // Allow create for new organizations (EC or SuperAdmin)
+      allow create: if true;
+      
+      // Allow delete for cleanup (in production, restrict to SuperAdmin)
+      allow delete: if true;
+
+      // ✅ Voters subcollection - locked when approval is pending/approved
+      match /voters/{voterId} {
+        allow read: if true; // Public read for voter login
+        
+        // EC can write only if organization editing is allowed
+        allow write: if isApprovalEditable(get(/databases/$(database)/documents/organizations/$(orgId)).data);
+      }
+
+      // ✅ Positions subcollection - locked when approval is pending/approved
+      match /positions/{positionId} {
+        allow read: if true; // Public read for ballot display
+        
+        // EC can write only if organization editing is allowed
+        allow write: if isApprovalEditable(get(/databases/$(database)/documents/organizations/$(orgId)).data);
+      }
+
+      // ✅ Candidates subcollection - locked when approval is pending/approved
+      match /candidates/{candidateId} {
+        allow read: if true; // Public read for ballot display
+        
+        // EC can write only if organization editing is allowed
+        allow write: if isApprovalEditable(get(/databases/$(database)/documents/organizations/$(orgId)).data);
+      }
+
+      // ✅ Votes collection - always writable for voters, read restricted
+      match /votes/{voteId} {
+        // Voters can read their own votes (by voterId)
+        allow read: if true;
+        
+        // Voters can create votes (one-time voting)
+        allow create: if true;
+        
+        // Update/delete restricted (prevent vote tampering)
+        allow update, delete: if false;
+      }
+
+      // ✅ Invites subcollection - track invite sends
+      match /invites/{inviteId} {
+        allow read: if true; // EC can view invite status
+        
+        // EC can always send invites (even after approval) - it's just tracking/logging
+        allow create, update: if true;
+        
+        allow delete: if false; // Preserve invite history
+      }
+
+      // ✅ Invite templates - EC can manage when editing allowed
+      match /inviteTemplates/{templateId} {
+        allow read: if true;
+        
+        allow write: if isApprovalEditable(get(/databases/$(database)/documents/organizations/$(orgId)).data);
+      }
+
+      // ✅ Audit logs - read-only, system-managed
+      match /auditLogs/{logId} {
+        allow read: if true;  // EC and SuperAdmin can view
+        allow create: if true; // System can create
+        allow update, delete: if false; // Immutable audit trail
+      }
+    }
+    
+    // ✅ Global activity log (if used)
+    match /activity/{activityId} {
+      allow read: if true;  // SuperAdmin can view
+      allow create: if true; // System can create
+      allow update, delete: if false; // Immutable activity log
+    }
+
+    // ✅ Guidance downloads analytics
+    match /guidanceDownloads/{downloadId} {
+      allow read: if true;  // SuperAdmin can view analytics
+      allow create: if true; // System can track downloads
+      allow update, delete: if false; // Immutable analytics log
+    }
+
+    // ✅ Administrators collection - manage admin users with roles
+    match /administrators/{adminEmail} {
+      // Allow read for super admin login and admin management UI
+      allow read: if true;  // In production: restrict to authenticated super admins
+      
+      // Allow create for adding new administrators
+      allow create: if true; // In production: restrict to super admins with create_admins permission
+      
+      // Allow update for editing admin profiles and permissions
+      allow update: if true; // In production: restrict to super admins with edit_admins permission
+      
+      // Allow delete for removing administrators
+      allow delete: if true; // In production: restrict to super admins with delete_admins permission
+    }
+  }
+}

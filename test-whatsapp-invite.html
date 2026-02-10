@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test WhatsApp Invite Function</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #1a1a2e;
+            color: #eee;
+        }
+        .container {
+            background: #16213e;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        }
+        button {
+            background: #25D366;
+            color: #fff;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 20px;
+        }
+        button:hover {
+            background: #128C7E;
+        }
+        #result {
+            margin-top: 20px;
+            padding: 15px;
+            background: #0f3460;
+            border-radius: 5px;
+            white-space: pre-wrap;
+            font-family: monospace;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>💬 Test WhatsApp Invite Function</h1>
+        <p>Direct test of Netlify WhatsApp function</p>
+        
+        <button onclick="testWhatsApp()">Test Send EC WhatsApp Invite</button>
+        
+        <div id="result"></div>
+    </div>
+
+    <script>
+        async function testWhatsApp() {
+            const resultDiv = document.getElementById('result');
+            resultDiv.textContent = 'Sending WhatsApp message...';
+            
+            try {
+                const response = await fetch('/.netlify/functions/send-whatsapp', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        to: '+233247654381',
+                        message: 'Hi Election Commissioner! 👋\n\nYou\'ve been assigned as Election Commissioner for *TEST ORG*.\n\n📋 *Login Details:*\n🔗 Link: https://neonvotingsystemz.netlify.app/?org=test&role=ec\n🆔 Org ID: test-123\n🔑 Password: TEST123456\n\n✨ Manage your election from the EC dashboard!',
+                        voterName: 'Test EC',
+                        orgId: 'test-123'
+                    })
+                });
+                
+                console.log('Response status:', response.status);
+                
+                const result = await response.json();
+                
+                resultDiv.textContent = JSON.stringify(result, null, 2);
+                
+                if (result.ok) {
+                    resultDiv.style.color = '#51cf66';
+                } else {
+                    resultDiv.style.color = '#ff6b6b';
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                resultDiv.textContent = 'Error: ' + error.message;
+                resultDiv.style.color = '#ff6b6b';
+            }
+        }
+    </script>
+</body>
+</html>

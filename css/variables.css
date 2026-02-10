@@ -1,0 +1,53 @@
+/* ================================
+   NEON DESIGN SYSTEM v1.0
+   Global Design Tokens
+================================ */
+
+:root{
+  /* Legacy (keep for compatibility) */
+  --bg:#0b1020;
+  --card:#111a33;
+  --card2:#0f1730;
+  --border: rgba(0,255,255,.14);
+  --text:#eaf2ff;
+  --muted:#9bb2d0;
+  --primary:#9D00FF;
+  --secondary:#00C3FF;
+  --accent:#00ffaa;
+  --danger:#ff4b4b;
+
+  /* === BACKGROUNDS === */
+  --bg-main-1: #050812;
+  --bg-main-2: #07122a;
+  --bg-main-3: #0a1634;
+
+  /* === CARDS === */
+  --card-bg-1: rgba(7,21,51,0.85);
+  --card-bg-2: rgba(8,26,59,0.82);
+  --card-border: rgba(0,234,255,0.25);
+  --card-border-soft: rgba(0,234,255,0.12);
+
+  /* === GLOW & SHADOWS === */
+  --neon-glow: rgba(0,234,255,0.18);
+
+  /* === TEXT === */
+  --text-main: #eaf2ff;
+  --text-muted: rgba(234,242,255,0.72);
+  --text-faint: rgba(234,242,255,0.55);
+
+  /* === ACCENT COLORS === */
+  --accent-primary: #00eaff;
+  --accent-success: #00ffaa;
+  --accent-danger: #ff6666;
+  --accent-warning: #ffc107;
+
+  /* === RADIUS === */
+  --radius-lg: 16px;
+  --radius-md: 12px;
+  --radius-sm: 8px;
+
+  /* === MOTION === */
+  --ease-ui: cubic-bezier(.2,.6,.2,1);
+  --duration-fast: .12s;
+  --duration-normal: .16s;
+}

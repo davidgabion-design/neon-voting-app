@@ -1,0 +1,71 @@
+/* Base Styles & Global Resets */
+*{box-sizing:border-box}
+
+body{
+  margin:0;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  color:var(--text);
+  background:
+    radial-gradient(1000px 500px at 25% 20%, rgba(0,234,255,0.12), transparent 60%),
+    radial-gradient(900px 500px at 80% 35%, rgba(0,234,255,0.10), transparent 60%),
+    radial-gradient(900px 500px at 30% 90%, rgba(0,255,170,0.08), transparent 55%),
+    linear-gradient(180deg, #050812, #0a1634);
+  min-height:100vh;
+}
+
+.app{
+  width:min(1100px, 92vw);
+  margin:0 auto;
+  padding:26px 0 60px;
+}
+
+/* Screens */
+.screen{display:none; animation: fadeIn .25s ease;}
+.screen.active{display:block;}
+
+@keyframes fadeIn{from{opacity:0; transform:translateY(6px)} to{opacity:1; transform:translateY(0)}}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes pulse {
+  0% { opacity: 1; }
+  50% { opacity: 0.5; }
+  100% { opacity: 1; }
+}
+
+/* ================================
+   TYPOGRAPHY & SPACING (GLOBAL)
+================================ */
+
+h1, h2, h3, h4, h5, h6{
+  letter-spacing: .2px;
+  margin: 0;
+  line-height: 1.3;
+}
+
+h1{ font-size: 28px; }
+h2{ font-size: 20px; }
+h3{ font-size: 18px; }
+h4{ font-size: 16px; }
+
+.subtext{
+  color: var(--text-muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.section{
+  margin-bottom: 24px;
+}
+
+.section-title{
+  margin-bottom: 14px;
+}
+
+.section-title h2,
+.section-title h3,
+.section-title h4{
+  margin-bottom: 4px;
+}

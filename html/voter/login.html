@@ -1,0 +1,60 @@
+<section id="voterLoginScreen" class="screen">
+  <div class="login-container">
+    <div class="login-card">
+      <div class="login-header">
+        <div>
+          <h2 class="login-title">
+            <i class="fas fa-person-booth"></i> Voter Login
+          </h2>
+          <p class="login-subtitle">Cast your vote securely and anonymously</p>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <select id="voterLoginLangSelect" class="input" style="max-width:110px;padding:6px 10px;font-size:13px" title="Change Language">
+            <option value="ENG">🇬🇧 ENG</option>
+            <option value="SPA">🇪🇸 SPA</option>
+            <option value="FRE">🇫🇷 FRE</option>
+            <option value="POR">🇵🇹 POR</option>
+            <option value="TWI">🇬🇭 TWI</option>
+          </select>
+          <button id="voter-back" class="btn-back">
+            <i class="fas fa-arrow-left"></i> Back
+          </button>
+        </div>
+      </div>
+
+      <div class="login-body">
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="voterOrgIdInput">Organization ID</label>
+            <input id="voterOrgIdInput" type="text" placeholder="e.g. ORG-12345" autocomplete="off" />
+          </div>
+
+          <div class="form-group">
+            <label for="voterCredentialInput">Email or Phone Number</label>
+            <input id="voterCredentialInput" type="text" placeholder="email@example.com or +233..." autocomplete="off" />
+          </div>
+
+          <button id="voterLoginBtn" class="btn btn-block neon-btn" type="button">
+            <i class="fas fa-right-to-bracket"></i> Continue to Vote
+          </button>
+
+          <div id="voterLoginError" class="error-text"></div>
+        </div>
+
+        <div class="info-banner">
+          <i class="fas fa-shield-check"></i>
+          <div>
+            <strong>Secure & Anonymous</strong>
+            <div class="subtext">Your vote is encrypted and cannot be traced back to you</div>
+          </div>
+        </div>
+
+        <div style="margin-top:14px;text-align:center">
+          <a href="#" onclick="showScreen('guidanceVoterScreen')" class="subtext">
+            How voting works & what to expect
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>

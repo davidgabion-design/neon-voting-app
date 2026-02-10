@@ -1,0 +1,71 @@
+<section id="alreadyVotedScreen" class="screen">
+  <div class="card" style="max-width:900px;margin:0 auto">
+    <!-- Status Banner -->
+    <div class="status-banner active" id="voterStatusBanner" style="margin-bottom:20px">
+      <i class="fas fa-sync"></i>
+      <span id="voterLiveStatus">Loading election status...</span>
+    </div>
+
+    <!-- Vote Confirmation -->
+    <div style="text-align:center;margin-bottom:30px">
+      <div style="font-size:52px; color: var(--accent); margin-top:4px">
+        <i class="fas fa-circle-check"></i>
+      </div>
+      <h2 id="alreadyVotedTitle" style="margin:10px 0 6px">You Already Voted</h2>
+      <div class="subtext" id="alreadyVotedSubtext">Your vote has been securely recorded and counted.</div>
+      <div id="alreadyVotedDetails"></div>
+      
+      <!-- View Counter Notice -->
+      <div id="viewCounterNotice" style="margin-top:15px;padding:10px;background:rgba(0,255,255,0.05);border-radius:8px;border:1px solid rgba(0,255,255,0.2);display:none">
+        <i class="fas fa-eye"></i>
+        <span id="viewCounterText" class="subtext"></span>
+      </div>
+    </div>
+
+    <!-- Live Turnout Progress -->
+    <div class="card" style="margin-bottom:20px">
+      <h4 style="margin:0 0 10px"><i class="fas fa-users"></i> Live Turnout Progress</h4>
+      <div class="subtext" id="turnoutText">Loading...</div>
+      <div class="turnout-bar" style="margin-top:10px">
+        <div class="turnout-fill" id="turnoutFill" style="width:0%"></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;margin-top:6px;font-size:12px;opacity:.8">
+        <span id="turnoutVotes">0 votes</span>
+        <span id="turnoutEligible">0 eligible voters</span>
+      </div>
+    </div>
+
+    <!-- Election Updates -->
+    <div class="card" style="margin-bottom:20px">
+      <h4 style="margin:0 0 10px"><i class="fas fa-bell"></i> Election Updates</h4>
+      <div class="subtext">Check back here for real-time updates and announcements.</div>
+      <div id="electionUpdatesContainer" style="margin-top:10px"></div>
+    </div>
+
+    <!-- Results Section (shown when declared) -->
+    <div id="voterResultsSection" style="display:none">
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:15px">
+          <h4 style="margin:0"><i class="fas fa-chart-bar"></i> Election Results</h4>
+          <button class="btn neon-btn-outline" id="btnVoterPDF" onclick="window.downloadVoterResultsPDF()" style="display:none">
+            <i class="fas fa-file-pdf"></i> Download PDF
+          </button>
+        </div>
+        <div id="voterLiveResultsContainer"></div>
+      </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="row" style="justify-content:center; margin-top:30px">
+      <button class="btn neon-btn" onclick="window.location.reload()">
+        <i class="fas fa-sync"></i> Refresh Updates
+      </button>
+      <button class="btn neon-btn-outline" onclick="window.logoutVoter()">
+        <i class="fas fa-right-to-bracket"></i> Logout
+      </button>
+      <button class="btn neon-btn-outline" onclick="window.showScreen('gatewayScreen')">
+        <i class="fas fa-home"></i> Gateway
+      </button>
+    </div>
+  </div>
+</section>

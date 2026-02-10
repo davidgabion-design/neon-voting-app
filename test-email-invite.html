@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Email Invite - Diagnostic</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #0a0e27;
+            color: #00eaff;
+        }
+        button {
+            background: linear-gradient(135deg, #9D00FF, #00C3FF);
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 10px;
+        }
+        button:hover {
+            opacity: 0.9;
+        }
+        #result {
+            background: rgba(255,255,255,0.05);
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 20px;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        .success { color: #00ffaa; }
+        .error { color: #ff6b6b; }
+        .info { color: #ffcc80; }
+        input {
+            padding: 10px;
+            margin: 5px;
+            width: 300px;
+            border-radius: 4px;
+            border: 1px solid #00C3FF;
+            background: rgba(0,0,0,0.3);
+            color: #00eaff;
+        }
+        label {
+            display: block;
+            margin-top: 10px;
+            color: #00C3FF;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔍 Email Invite Function - Diagnostic Test</h1>
+    
+    <div>
+        <label>Recipient Email:</label>
+        <input type="email" id="recipientEmail" value="david.gabion@regent.edu.gh" />
+        
+        <label>Recipient Name:</label>
+        <input type="text" id="recipientName" value="Test Admin" />
+        
+        <label>Organization Name:</label>
+        <input type="text" id="orgName" value="Test Organization" />
+    </div>
+    
+    <button onclick="testECInvite()">📧 Test EC Invite</button>
+    <button onclick="testVoterInvite()">🗳️ Test Voter Invite</button>
+    <button onclick="checkFunction()">🔧 Check Function Availability</button>
+    
+    <div id="result"></div>
+
+    <script>
+        function log(message, type = 'info') {
+            const resultEl = document.getElementById('result');
+            const timestamp = new Date().toLocaleTimeString();
+            const className = type === 'success' ? 'success' : type === 'error' ? 'error' : 'info';
+            resultEl.innerHTML += `<div class="${className}">[${timestamp}] ${message}</div>`;
+        }
+
+        async function checkFunction() {
+            const resultEl = document.getElementById('result');
+            resultEl.innerHTML = '';
+            log('Checking if function is available...', 'info');
+            
+            try {
+                const response = await fetch('/.netlify/functions/send-invite', {
+                    method: 'OPTIONS'
+                });
+                
+                log(`OPTIONS response: ${response.status} ${response.statusText}`, 
+                    response.ok ? 'success' : 'error');
+                log(`Headers: ${JSON.stringify(Object.fromEntries(response.headers))}`, 'info');
+                
+                if (response.ok) {
+                    log('✅ Function is accessible!', 'success');
+                } else {
+                    log('❌ Function returned error status', 'error');
+                }
+            } catch (error) {
+                log(`❌ Cannot reach function: ${error.message}`, 'error');
+            }
+        }
+
+        async function testECInvite() {
+            const resultEl = document.getElementById('result');
+            resultEl.innerHTML = '';
+            log('Sending EC invite test...', 'info');
+            
+            const email = document.getElementById('recipientEmail').value;
+            const name = document.getElementById('recipientName').value;
+            const orgName = document.getElementById('orgName').value;
+            
+            const payload = {
+                to: email,
+                recipientType: 'ec',
+                orgName: orgName,
+                orgId: 'test-org-' + Date.now(),
+                recipientName: name,
+                credentials: {
+                    password: 'TestPass123',
+                    type: 'password'
+                }
+            };
+            
+            log(`Payload: ${JSON.stringify(payload, null, 2)}`, 'info');
+            
+            try {
+                log('Sending POST request...', 'info');
+                const response = await fetch('/.netlify/functions/send-invite', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                log(`Response status: ${response.status} ${response.statusText}`, 
+                    response.ok ? 'success' : 'error');
+                
+                const text = await response.text();
+                log(`Response body: ${text}`, 'info');
+                
+                const data = JSON.parse(text);
+                log(`Parsed response: ${JSON.stringify(data, null, 2)}`, 'info');
+                
+                if (data.ok) {
+                    log(`✅ SUCCESS! Email sent with messageId: ${data.messageId}`, 'success');
+                    log(`Check your inbox at: ${email}`, 'success');
+                    log(`Also check SPAM folder!`, 'info');
+                } else {
+                    log(`❌ FAILED: ${data.error}`, 'error');
+                    if (data.details) {
+                        log(`Error details: ${data.details}`, 'error');
+                    }
+                }
+            } catch (error) {
+                log(`❌ Exception: ${error.message}`, 'error');
+                log(`Stack: ${error.stack}`, 'error');
+            }
+        }
+
+        async function testVoterInvite() {
+            const resultEl = document.getElementById('result');
+            resultEl.innerHTML = '';
+            log('Sending Voter invite test...', 'info');
+            
+            const email = document.getElementById('recipientEmail').value;
+            const name = document.getElementById('recipientName').value;
+            const orgName = document.getElementById('orgName').value;
+            
+            const payload = {
+                to: email,
+                recipientType: 'voter',
+                orgName: orgName,
+                orgId: 'test-org-' + Date.now(),
+                recipientName: name,
+                credentials: {
+                    credential: email,
+                    type: 'email'
+                }
+            };
+            
+            log(`Payload: ${JSON.stringify(payload, null, 2)}`, 'info');
+            
+            try {
+                const response = await fetch('/.netlify/functions/send-invite', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                log(`Response status: ${response.status} ${response.statusText}`, 
+                    response.ok ? 'success' : 'error');
+                
+                const text = await response.text();
+                const data = JSON.parse(text);
+                
+                log(`Response: ${JSON.stringify(data, null, 2)}`, 'info');
+                
+                if (data.ok) {
+                    log(`✅ SUCCESS! Email sent`, 'success');
+                    log(`Check your inbox and spam folder!`, 'success');
+                } else {
+                    log(`❌ FAILED: ${data.error}`, 'error');
+                }
+            } catch (error) {
+                log(`❌ Error: ${error.message}`, 'error');
+            }
+        }
+    </script>
+</body>
+</html>

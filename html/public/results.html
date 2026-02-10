@@ -1,0 +1,42 @@
+<section id="publicScreen" class="screen">
+  <div class="login-container">
+    <div class="login-card">
+      <div class="login-header">
+        <div>
+          <h2 class="login-title">
+            <i class="fas fa-chart-column"></i> Public Results
+          </h2>
+          <p class="login-subtitle">View published election outcomes (read-only)</p>
+        </div>
+        <button id="public-back" class="btn-back">
+          <i class="fas fa-arrow-left"></i> Back
+        </button>
+      </div>
+
+      <div class="login-body">
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="publicOrgIdInput">Organization ID</label>
+            <input id="publicOrgIdInput" type="text" placeholder="e.g. ORG-12345" autocomplete="off" />
+          </div>
+
+          <button id="publicLoadBtn" class="btn btn-block neon-btn" type="button">
+            <i class="fas fa-chart-bar"></i> View Results
+          </button>
+        </div>
+
+        <div class="info-banner">
+          <i class="fas fa-globe"></i>
+          <div>
+            <strong>Public Access</strong>
+            <div class="subtext">Results are only visible after election has been declared by officials</div>
+          </div>
+        </div>
+
+        <div id="publicResultsBox" style="margin-top:24px">
+          <!-- Results will load here dynamically -->
+        </div>
+      </div>
+    </div>
+  </div>
+</section>

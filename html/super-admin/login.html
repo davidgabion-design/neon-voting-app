@@ -1,0 +1,47 @@
+<section id="superAdminLoginScreen" class="screen">
+  <div class="super-login-container">
+    <div class="super-login-card">
+      <div class="super-login-header">
+        <div>
+          <h2 class="super-login-title">
+            <i class="fas fa-crown"></i> Super Admin Login
+          </h2>
+          <p class="super-login-sub">Owner access to manage organizations and approve elections</p>
+        </div>
+        <button class="super-login-back" onclick="showScreen('gatewayScreen')">
+          <i class="fas fa-arrow-left"></i> Back
+        </button>
+      </div>
+
+      <div class="super-login-body">
+        <label class="super-login-label">Super Admin Password</label>
+        <input 
+          id="super-admin-pass" 
+          type="password" 
+          class="super-login-input" 
+          placeholder="Enter super admin password"
+          autocomplete="off"
+        />
+
+        <div id="super-admin-error" class="password-error">
+          <i class="fas fa-exclamation-circle"></i>
+          <span id="super-admin-error-text">Invalid password. Please try again.</span>
+        </div>
+
+        <button id="super-login-btn" class="super-login-btn" onclick="loginSuperAdmin()">
+          <i class="fas fa-sign-in-alt"></i>
+          Login
+        </button>
+
+        <div class="setup-instructions">
+          <h4><i class="fas fa-database"></i> Firestore Setup</h4>
+          <div class="subtext">
+            <strong>Default Password:</strong> <code>admin123</code><br>
+            <strong>Real-time Sync:</strong> <span class="badge success">Active</span><br>
+            <small>All organization data syncs instantly with global dashboard.</small>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>

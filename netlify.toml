@@ -1,0 +1,11 @@
+# Netlify configuration (relative paths for cross-platform builds)
+
+[build]
+publish = "."
+functions = "netlify/functions"
+
+[[redirects]]
+from = "/api/*"
+to = "/.netlify/functions/:splat"
+status = 200
+force = true

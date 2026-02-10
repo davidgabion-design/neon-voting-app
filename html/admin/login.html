@@ -1,0 +1,68 @@
+﻿<section id="adminLoginScreen" class="screen">
+  <div class="main-container">
+    <div class="login-card">
+      <div class="card-header">
+        <div class="icon-wrapper">
+          <i class="fas fa-user-shield"></i>
+        </div>
+        <h2 data-i18n="admin_login">Administrator Login</h2>
+        <p class="subtitle" data-i18n="admin_login_subtitle">Access administrative functions</p>
+      </div>
+      
+      <div class="card-body">
+        <div class="form-group">
+          <label for="admin-email">
+            <i class="fas fa-envelope"></i>
+            <span data-i18n="email">Email</span>
+          </label>
+          <input 
+            type="email" 
+            id="admin-email" 
+            class="input" 
+            placeholder="admin@example.com"
+            data-i18n-placeholder="enter_email"
+            autocomplete="email"
+          />
+        </div>
+        
+        <div class="form-group">
+          <label for="admin-password">
+            <i class="fas fa-lock"></i>
+            <span data-i18n="password">Password</span>
+          </label>
+          <input 
+            type="password" 
+            id="admin-password" 
+            class="input" 
+            placeholder="Enter password"
+            data-i18n-placeholder="enter_password"
+            autocomplete="current-password"
+          />
+        </div>
+        
+        <button id="admin-login-btn" class="btn neon-btn btn-block">
+          <i class="fas fa-sign-in-alt"></i>
+          <span data-i18n="login">Login</span>
+        </button>
+        
+        <div class="divider"></div>
+        
+        <button class="btn neon-btn-outline btn-block" onclick="showScreen('gatewayScreen')">
+          <i class="fas fa-arrow-left"></i>
+          <span data-i18n="back_to_gateway">Back to Gateway</span>
+        </button>
+      </div>
+      
+      <!-- Language Selector -->
+      <div style="text-align: center; margin-top: 20px">
+        <select id="adminLoginLangSelect" class="lang-select">
+          <option value="ENG">🇬🇧 English</option>
+          <option value="SPA">🇪🇸 Español</option>
+          <option value="FRE">🇫🇷 Français</option>
+          <option value="POR">🇵🇹 Português</option>
+          <option value="TWI">🇬🇭 Twi</option>
+        </select>
+      </div>
+    </div>
+  </div>
+</section>

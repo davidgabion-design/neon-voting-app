@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test SMS Invite Function</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #1a1a2e;
+            color: #eee;
+        }
+        .container {
+            background: #16213e;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        }
+        button {
+            background: #00d9ff;
+            color: #000;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 20px;
+        }
+        button:hover {
+            background: #00b8d4;
+        }
+        #result {
+            margin-top: 20px;
+            padding: 15px;
+            background: #0f3460;
+            border-radius: 5px;
+            white-space: pre-wrap;
+            font-family: monospace;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📱 Test SMS Invite Function</h1>
+        <p>Direct test of Netlify SMS function</p>
+        
+        <button onclick="testSMS()">Test Send EC SMS Invite</button>
+        
+        <div id="result"></div>
+    </div>
+
+    <script>
+        async function testSMS() {
+            const resultDiv = document.getElementById('result');
+            resultDiv.textContent = 'Sending SMS...';
+            
+            try {
+                const response = await fetch('/.netlify/functions/send-invite-sms', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        phone: '+233247654381',
+                        message: 'Hi Election Commissioner! You\'ve been assigned as Election Commissioner for TEST ORG. Login: https://neonvotingsystemz.netlify.app/?org=test&role=ec | Org ID: test-123 | Password: TEST123456',
+                        recipientType: 'ec',
+                        orgId: 'test-123',
+                        recipientName: 'Test EC'
+                    })
+                });
+                
+                console.log('Response status:', response.status);
+                
+                const result = await response.json();
+                
+                resultDiv.textContent = JSON.stringify(result, null, 2);
+                
+                if (result.ok) {
+                    resultDiv.style.color = '#51cf66';
+                } else {
+                    resultDiv.style.color = '#ff6b6b';
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                resultDiv.textContent = 'Error: ' + error.message;
+                resultDiv.style.color = '#ff6b6b';
+            }
+        }
+    </script>
+</body>
+</html>

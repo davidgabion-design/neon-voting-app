@@ -1,0 +1,79 @@
+<section id="gatewayScreen" class="screen active">
+  <div class="gateway-shell">
+    <div class="gateway-panel">
+
+      <div class="gateway-header">
+        <div class="gateway-brand">
+          <h1>Neon Voting System</h1>
+          <p>Secure, multi-tenant election platform</p>
+        </div>
+        <div style="position:absolute;top:20px;right:20px">
+          <select id="gatewayLangSelect" class="input" style="padding:6px 10px;font-size:12px;background:rgba(0,0,0,0.3);border:1px solid rgba(0,234,255,0.3)" title="Select Language">
+            <option value="ENG">🇬🇧 ENG</option>
+            <option value="SPA">🇪🇸 SPA</option>
+            <option value="FRE">🇫🇷 FRE</option>
+            <option value="POR">🇵🇹 POR</option>
+            <option value="TWI">🇬🇭 TWI</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="gateway-grid">
+        <!-- Row 1: Main Roles -->
+        <button id="btn-superadmin" class="gateway-card" type="button">
+          <div class="gateway-icon"><i class="fas fa-shield-halved"></i></div>
+          <div class="gateway-title">Super Admin</div>
+          <p class="gateway-desc">
+            Platform control, organization management & approvals
+          </p>
+        </button>
+
+        <button id="btn-admin" class="gateway-card" type="button">
+          <div class="gateway-icon"><i class="fas fa-user-shield"></i></div>
+          <div class="gateway-title">Administrator</div>
+          <p class="gateway-desc">
+            System administration with role-based access
+          </p>
+        </button>
+
+        <button id="btn-ec" class="gateway-card" type="button">
+          <div class="gateway-icon"><i class="fas fa-box-archive"></i></div>
+          <div class="gateway-title">Election Commissioner</div>
+          <p class="gateway-desc">
+            Create elections, manage voters, candidates & schedules
+          </p>
+        </button>
+
+        <button id="btn-voter" class="gateway-card" type="button">
+          <div class="gateway-icon"><i class="fas fa-user"></i></div>
+          <div class="gateway-title">Voter</div>
+          <p class="gateway-desc">
+            Secure login & cast your vote
+          </p>
+        </button>
+
+        <!-- Row 2: Public Access -->
+        <button id="btn-public" class="gateway-card gateway-card-public" type="button">
+          <div class="gateway-icon"><i class="fas fa-chart-column"></i></div>
+          <div class="gateway-title">Public Results</div>
+          <p class="gateway-desc">
+            View published election outcomes<br>(read-only)
+          </p>
+        </button>
+
+        <button class="gateway-card" onclick="showScreen('guidanceScreen')" type="button">
+          <div class="gateway-icon"><i class="fas fa-circle-info"></i></div>
+          <div class="gateway-title">Guidance & Info</div>
+          <p class="gateway-desc">
+            Learn how the system works before logging in
+          </p>
+        </button>
+      </div>
+
+      <div class="gateway-footer">
+        © Neon Voting System • Secure • Auditable • Multi-Tenant
+      </div>
+
+    </div>
+  </div>
+</section>

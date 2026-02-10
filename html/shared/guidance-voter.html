@@ -1,0 +1,127 @@
+<section id="guidanceVoterScreen" class="screen">
+  <div class="card" style="max-width:900px;margin:40px auto">
+
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
+      <h2 style="margin:0">
+        <i class="fas fa-vote-yea"></i>
+        <span data-i18n="voter_guidance">Voter Guidance & Information</span>
+      </h2>
+
+      <div style="display:flex;gap:8px;align-items:center">
+        <select id="langSelect" class="input" style="max-width:140px;padding:6px 10px">
+          <option value="ENG">🇬🇧 English</option>
+          <option value="SPA">🇪🇸 Español</option>
+          <option value="FRE">🇫🇷 Français</option>
+          <option value="POR">🇵🇹 Português</option>
+          <option value="TWI">🇬🇭 Twi</option>
+        </select>
+        <button class="btn neon-btn" id="downloadGuidancePDF-voter" title="Download this guide as PDF">
+          <i class="fas fa-file-pdf"></i> <span data-i18n="download_guide">Download Guide</span>
+        </button>
+        <button class="btn neon-btn-outline" id="guidance-voter-back">
+          <i class="fas fa-arrow-left"></i> <span data-i18n="back_to_login">Back to Login</span>
+        </button>
+      </div>
+    </div>
+
+    <p class="subtext" style="margin-top:8px" data-i18n="voter_description">
+      Everything you need to know to cast your vote securely and confidently.
+    </p>
+
+    <hr style="margin:18px 0;opacity:.2">
+
+    <!-- HOW VOTING WORKS -->
+    <div class="section">
+      <h3>How Voting Works</h3>
+      <ol class="subtext">
+        <li><strong>Login</strong> - Use your Organization ID and the email/phone you were registered with</li>
+        <li><strong>Review Candidates</strong> - See all candidates for each position with their photos and details</li>
+        <li><strong>Cast Your Vote</strong> - Select your preferred candidates (follow vote limits for each position)</li>
+        <li><strong>Confirm</strong> - Review your selections and submit your ballot</li>
+        <li><strong>Vote Recorded</strong> - Your vote is encrypted and securely stored</li>
+        <li><strong>Check Results</strong> - After voting closes, log in again to view published results</li>
+      </ol>
+    </div>
+
+    <!-- YOUR RIGHTS AS A VOTER -->
+    <div class="section">
+      <h3>Your Rights as a Voter</h3>
+      <ul class="subtext">
+        <li>✔ Your vote is <strong>anonymous</strong> - No one can trace your ballot back to you</li>
+        <li>✔ You can only vote <strong>once</strong> - The system prevents duplicate voting</li>
+        <li>✔ Your vote is <strong>secure</strong> - All ballots are encrypted end-to-end</li>
+        <li>✔ You can <strong>verify</strong> you voted - Check your voting status after submission</li>
+        <li>✔ Results are <strong>transparent</strong> - View official outcomes when declared</li>
+      </ul>
+    </div>
+
+    <!-- WHAT TO EXPECT -->
+    <div class="section">
+      <h3>What to Expect</h3>
+      <p class="subtext"><strong>Before Voting Opens:</strong></p>
+      <ul class="subtext">
+        <li>You may receive an invitation email, SMS, or WhatsApp message with your credentials</li>
+        <li>If you don't receive credentials, contact your Election Commissioner</li>
+      </ul>
+
+      <p class="subtext" style="margin-top:12px"><strong>During Voting:</strong></p>
+      <ul class="subtext">
+        <li>Voting is open for a specific time period - don't miss it!</li>
+        <li>You can log in, review candidates, and take your time before submitting</li>
+        <li>Once you submit, your vote is final and cannot be changed</li>
+      </ul>
+
+      <p class="subtext" style="margin-top:12px"><strong>After Voting:</strong></p>
+      <ul class="subtext">
+        <li>You can log back in to see that your vote was recorded</li>
+        <li>Wait for the Election Commissioner to declare results</li>
+        <li>View official results transparently when published</li>
+      </ul>
+    </div>
+
+    <!-- SECURITY & PRIVACY -->
+    <div class="section card" style="margin-top:18px">
+      <h3>
+        <i class="fas fa-shield-check"></i>
+        Security & Privacy Guarantee
+      </h3>
+      <p class="subtext">
+        Neon Voting System uses industry-standard encryption to protect your vote. 
+        Your ballot is completely anonymous and cannot be traced back to you. 
+        All votes are stored securely and counted accurately.
+      </p>
+      <ul class="subtext" style="margin-top:10px">
+        <li>🔒 End-to-end encryption</li>
+        <li>🔒 Anonymous voting</li>
+        <li>🔒 Tamper-proof audit trail</li>
+        <li>🔒 Secure authentication</li>
+      </ul>
+    </div>
+
+    <!-- CONTACT & SUPPORT -->
+    <div class="section" style="margin-top:24px;padding:16px;background:rgba(0,255,255,0.05);border-radius:12px;border:1px solid rgba(0,255,255,0.2)">
+      <h3 style="margin-bottom:10px">
+        <i class="fas fa-headset"></i>
+        Need Help Voting?
+      </h3>
+      <p class="subtext" style="margin-bottom:12px">
+        If you're having trouble logging in, casting your vote, or have questions about the process:
+      </p>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <div style="display:flex;align-items:center;gap:10px">
+          <i class="fas fa-phone" style="color:var(--accent-primary);width:20px"></i>
+          <a href="tel:+233247654381" style="color:var(--text-primary);text-decoration:none">
+            +233 24 765 4381
+          </a>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px">
+          <i class="fas fa-envelope" style="color:var(--accent-primary);width:20px"></i>
+          <a href="mailto:gabiondavidselorm@gmail.com" style="color:var(--text-primary);text-decoration:none">
+            gabiondavidselorm@gmail.com
+          </a>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>

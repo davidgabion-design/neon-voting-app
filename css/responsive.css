@@ -1,0 +1,47 @@
+/* Responsive Design - Mobile & Tablet Adaptations */
+
+@media (max-width:900px){ 
+  .col-6{grid-column: span 12;} 
+  .live-charts-container{ 
+    grid-template-columns: 1fr !important; 
+  }
+}
+
+@media (max-width: 768px) {
+  .live-charts-container {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 600px){
+  .app{ 
+    width: 94vw; 
+    padding: 18px 0 40px; 
+  }
+  .topbar{ 
+    flex-direction:column; 
+    align-items:flex-start; 
+  }
+  .tabs{ 
+    gap:8px; 
+  }
+  .tab-btn{ 
+    width:100%; 
+    justify-content:center; 
+  }
+  .dashboard-stats-grid{ 
+    grid-template-columns: 1fr; 
+  }
+  .org-grid{ 
+    grid-template-columns: 1fr; 
+  }
+  .row{ 
+    gap:10px; 
+  }
+  .btn{ 
+    width:100%; 
+  }
+  .btn + .btn{ 
+    margin-top:8px; 
+  }
+}

@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Check Twilio Message Status</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #1a1a2e;
+            color: #eee;
+        }
+        .container {
+            background: #16213e;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        }
+        input, button {
+            width: 100%;
+            padding: 12px;
+            margin: 10px 0;
+            border-radius: 5px;
+            border: 1px solid #0f3460;
+            font-size: 16px;
+        }
+        input {
+            background: #0f3460;
+            color: #eee;
+        }
+        button {
+            background: #00d9ff;
+            color: #000;
+            font-weight: bold;
+            cursor: pointer;
+            border: none;
+        }
+        button:hover {
+            background: #00b8d4;
+        }
+        #result {
+            margin-top: 20px;
+            padding: 15px;
+            background: #0f3460;
+            border-radius: 5px;
+            white-space: pre-wrap;
+            font-family: monospace;
+        }
+        .error { color: #ff6b6b; }
+        .success { color: #51cf66; }
+        .warning { color: #ffd43b; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Twilio Message Status Checker</h1>
+        <p>Check why your SMS/WhatsApp messages aren't being delivered</p>
+        
+        <input type="text" id="messageSid" placeholder="Message SID (e.g., SM9aa85c4102cc5b9cff38e629b6278a92)">
+        <button onclick="checkStatus()">Check Message Status</button>
+        
+        <div id="result"></div>
+    </div>
+
+    <script>
+        async function checkStatus() {
+            const messageSid = document.getElementById('messageSid').value.trim();
+            const resultDiv = document.getElementById('result');
+            
+            if (!messageSid) {
+                resultDiv.innerHTML = '<span class="error">⚠️ Please enter a Message SID</span>';
+                return;
+            }
+            
+            resultDiv.innerHTML = '⏳ Checking Twilio API...';
+            
+            try {
+                const response = await fetch('/.netlify/functions/check-twilio-status', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ messageSid })
+                });
+                
+                const data = await response.json();
+                
+                if (data.ok) {
+                    const msg = data.message;
+                    let html = `<div class="success">✅ Message Found</div>\n\n`;
+                    html += `<strong>Status:</strong> ${msg.status}\n`;
+                    html += `<strong>To:</strong> ${msg.to}\n`;
+                    html += `<strong>From:</strong> ${msg.from}\n`;
+                    html += `<strong>Direction:</strong> ${msg.direction}\n`;
+                    html += `<strong>Date Sent:</strong> ${msg.dateSent || 'Pending'}\n`;
+                    html += `<strong>Price:</strong> ${msg.price || '0'} ${msg.priceUnit || 'USD'}\n\n`;
+                    
+                    if (msg.errorCode) {
+                        html += `<span class="error"><strong>❌ Error Code:</strong> ${msg.errorCode}</span>\n`;
+                        html += `<span class="error"><strong>Error Message:</strong> ${msg.errorMessage}</span>\n\n`;
+                        html += getErrorExplanation(msg.errorCode);
+                    } else if (msg.status === 'queued') {
+                        html += `<span class="warning">⏳ Message is queued but not sent yet.</span>\n`;
+                        html += `<span class="warning">This usually means:</span>\n`;
+                        html += `- Trial account limitation (unverified phone)\n`;
+                        html += `- WhatsApp sandbox not configured\n`;
+                        html += `- Invalid phone number format\n`;
+                    } else if (msg.status === 'delivered') {
+                        html += `<span class="success">✅ Message delivered successfully!</span>`;
+                    }
+                    
+                    resultDiv.innerHTML = html;
+                } else {
+                    resultDiv.innerHTML = `<span class="error">❌ Error: ${data.error}</span>`;
+                }
+            } catch (err) {
+                resultDiv.innerHTML = `<span class="error">❌ Failed to check status: ${err.message}</span>`;
+            }
+        }
+        
+        function getErrorExplanation(code) {
+            const errors = {
+                '21211': 'Invalid "To" phone number. Check format (must be E.164)',
+                '21608': 'Unverified phone number on trial account. Verify in Twilio Console.',
+                '21614': 'Invalid "From" phone number. Check TWILIO_SMS_FROM config.',
+                '30003': 'Message could not be delivered (invalid number or carrier issue)',
+                '30005': 'Unknown destination carrier',
+                '30006': 'Phone number appears to be landline (SMS not supported)',
+                '63016': 'WhatsApp message not sent - recipient not in sandbox (trial) or not opted-in'
+            };
+            
+            return `\n<strong class="warning">💡 Explanation:</strong>\n${errors[code] || 'Unknown error'}`;
+        }
+    </script>
+</body>
+</html>

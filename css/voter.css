@@ -1,0 +1,57 @@
+/* Voter-specific UI Styles */
+
+.vote-progress{
+  display:flex;align-items:center;justify-content:space-between;
+  gap:12px;
+  padding:10px 12px;
+  border-radius:14px;
+  border:1px solid rgba(255,255,255,.12);
+  background: rgba(255,255,255,.04);
+  margin: 6px 0 14px;
+  color: var(--text-muted);
+  font-size:12px;
+  font-weight:700;
+}
+
+.candidate-card{
+  border:1px solid rgba(255,255,255,.12);
+  background: rgba(255,255,255,.04);
+  border-radius:16px;
+  padding:12px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  cursor:pointer;
+  margin-bottom:10px;
+  transition:.15s ease;
+}
+
+.candidate-card:hover{border-color: rgba(0,255,255,.28); filter: brightness(1.04)}
+
+.candidate-card.selected{
+  border-color: rgba(0,255,170,.65);
+  box-shadow: 0 0 0 4px rgba(0,255,170,.08), 0 10px 26px rgba(0,255,170,.08);
+}
+
+.candidate-meta{display:flex;flex-direction:column;gap:2px;min-width:0}
+.candidate-name{font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.candidate-sub{font-size:12px;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+.vote-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+.vote-actions .btn{flex:1 1 180px}
+
+.review-item{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:12px;
+  padding:10px 12px;
+  border-radius:14px;
+  border:1px solid rgba(255,255,255,.10);
+  background: rgba(255,255,255,.03);
+  margin-bottom:10px;
+}
+
+.review-item .k{font-weight:800;color:var(--text)}
+.review-item .v{color:var(--text-muted);font-size:12px;text-align:right;max-width:60%}

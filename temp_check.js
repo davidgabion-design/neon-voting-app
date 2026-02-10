@@ -1,89 +1,4 @@
-﻿﻿<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Neon Voting Platform - Secure Digital Elections</title>
-  
-  <!-- Favicon -->
-  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' fill='%23001a33'/><rect x='20' y='20' width='60' height='60' rx='10' fill='none' stroke='%239d00ff' stroke-width='4'/><rect x='30' y='30' width='40' height='40' rx='6' fill='none' stroke='%2300eaff' stroke-width='3'/><circle cx='50' cy='50' r='8' fill='%239d00ff'/></svg>">
-  <link rel="alternate icon" type="image/png" href="/neon-logo.png">
-  
-  <!-- PWA Manifest -->
-  <link rel="manifest" href="/manifest.json">
-  <meta name="theme-color" content="#9d00ff">
-  <link rel="apple-touch-icon" href="/neon-logo.png">
-
-  <!-- Firebase SDKs (Modular) -->
-  <!-- Note: Firebase is initialized via modular imports in js/config/firebase.js -->
-
-  <!-- Icons -->
-  <link rel="stylesheet" href="./libs/fontawesome/all.min.css"/>
-
-  <!-- SheetJS for Excel parsing -->
-  <script src="./libs/xlsx.full.min.js"></script>
-
-  <!-- Modular CSS - Replaces inline styles -->
-  <link rel="stylesheet" href="./css/variables.css">
-  <link rel="stylesheet" href="./css/base.css">
-  <link rel="stylesheet" href="./css/components.css">
-  <link rel="stylesheet" href="./css/layout.css">
-  <link rel="stylesheet" href="./css/dashboard.css">
-  <link rel="stylesheet" href="./css/voter.css">
-  <link rel="stylesheet" href="./css/responsive.css">
-</head>
-
-<body>
-  <!-- Loading Overlay -->
-  <div id="loadingOverlay" class="loading-overlay active">
-    <div style="text-align: center">
-      <img src="./neon-logo.png" alt="Neon Voting Platform" style="width:120px;height:120px;margin-bottom:20px;animation:pulse 2s ease-in-out infinite;filter:drop-shadow(0 0 20px rgba(157,0,255,0.6))">
-      <div class="spinner"></div>
-      <div style="margin-top: 15px; color: var(--text); font-weight: 600" id="loadingText">Loading components...</div>
-    </div>
-  </div>
-  
-  <div class="app">
-    <div class="topbar">
-      <div class="brand">
-        <div class="logo" aria-hidden="true" title="Neon Voting Platform">
-          <img id="appLogoImg" src="./neon-logo.png" alt="Neon Voting Platform" style="display:block;width:100%;height:100%;object-fit:contain;">
-          <i class="fas fa-check-to-slot" id="appLogoIcon" style="display:none;"></i>
-        </div>
-        <input type="file" id="appLogoInput" accept="image/*" onchange="handleAppLogoUpload(event)" style="display:none">
-        <div>
-          <h1>Neon Voting Platform</h1>
-          <div class="subtitle">Secure Digital Elections</div>
-        </div>
-      </div>
-      <span class="badge info">v4.2 • Modular Architecture</span>
-    </div>
-
-    <!-- HTML Components Loaded Dynamically -->
-    <div id="app-screens">
-      <!-- All screen components will be injected here via html-loader.js -->
-    </div>
-  </div>
-  
-  <!-- Modals and Overlays Loaded Dynamically -->
-  <div id="app-modals">
-    <!-- Modal components will be injected here -->
-  </div>
-  
-  <!-- Toast Container -->
-  <div id="app-toasts">
-    <!-- Toast component will be injected here -->
-  </div>
-
-  <!-- Firebase Configuration and App Initialization -->
-  <script>
-    // Expose deploy-time APP_URL (if provided) for client code
-    window.APP_URL = "${APP_URL}";
-  </script>
-  <script src="./firebase-config.js"></script>
-  
-  <!-- Component Loader and App Initialization -->
-  <script type="module">
+﻿
     import { loadHTMLComponents } from './js/utils/html-loader.js';
     
     // Load all HTML components first (fast), then initialize Firebase
@@ -197,8 +112,7 @@
         document.addEventListener('change', (e) => {
           // Check if any language selector changed
           const languageSelectors = ['langSelect', 'ecLangSelect', 'superAdminLangSelect', 
-                                     'voterLangSelect', 'ecLoginLangSelect', 'voterLoginLangSelect',
-                                     'adminLoginLangSelect', 'adminPanelLangSelect'];
+                                     'voterLangSelect', 'ecLoginLangSelect', 'voterLoginLangSelect'];
           if (e.target && languageSelectors.includes(e.target.id)) {
             if (typeof window.loadLanguage === 'function') {
               window.loadLanguage(e.target.value);
@@ -221,7 +135,6 @@
             // Clear window state
             window.currentOrgId = null;
             window.currentOrgData = null;
-            window.currentAdmin = null;
             if (window.currentOrgUnsub) {
               window.currentOrgUnsub();
               window.currentOrgUnsub = null;
@@ -380,23 +293,12 @@
         
       } catch (error) {
         console.error('❌ Initialization failed:', error);
-        document.getElementById('loadingText').innerHTML = '<span style="color: #ff4444;">Error: ' + error.message + '</span><br><button onclick="location.reload()" style="margin-top:10px;padding:8px 16px;background:#9d00ff;color:white;border:none;border-radius:4px;cursor:pointer;">Reload</button>';
+        document.getElementById('loadingText').innerHTML = 
+          '<span style="color: #ff4444;">Error: ' + error.message + '</span><br>' +
+          '<button onclick="location.reload()" style="margin-top:10px;padding:8px 16px;background:#9d00ff;color:white;border:none;border-radius:4px;cursor:pointer;">Reload</button>';
       }
     }
     
     // Start initialization
     initializeApp();
-  </script>
   
-  <!-- 
-    ✅ Modularization Complete with Admin System! 
-    HTML: 15 component files (gateway, logins, panels, screens, modals)
-    JS: 7 modules (37 files, 145+ functions)
-    CSS: 7 files (variables, base, components, layout, dashboard, voter, responsive)
-  -->
-  
-  <!-- External Libraries for PDF/Excel Export -->
-  <script src="./libs/jspdf.umd.min.js"></script>
-  <script src="./libs/jspdf.plugin.autotable.min.js"></script>
-</body>
-</html>

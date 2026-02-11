@@ -67,9 +67,12 @@ exports.handler = async (event) => {
     };
   }
 
+  // ✅ PATCH START – Accept whatsapp: prefix safely
+  let cleanTo = to.replace(/^whatsapp:/i, '');
+
   // Validate phone number format
   const phoneRegex = /^\+?[1-9]\d{1,14}$/;
-  if (!phoneRegex.test(to)) {
+  if (!phoneRegex.test(cleanTo)) {
     return {
       statusCode: 400,
       headers: {
@@ -81,7 +84,7 @@ exports.handler = async (event) => {
   }
 
   // Ensure phone number has + prefix
-  const formattedTo = to.startsWith("+") ? to : `+${to}`;
+  const formattedTo = cleanTo.startsWith("+") ? cleanTo : `+${cleanTo}`;
 
   // Check for Twilio environment variables
   const {
@@ -131,6 +134,12 @@ exports.handler = async (event) => {
     messageLength: messageText.length,
     orgId,
     voterName
+  });
+
+  // 🔥 DEBUG – Final payload sent to Twilio
+  console.log("FINAL TWILIO PAYLOAD:", {
+    from: twilioFrom,
+    to: twilioTo
   });
 
   try {

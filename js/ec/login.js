@@ -25,10 +25,13 @@ function showECOTPInput(orgId) {
       </label>
       <input id="ecOtp" class="input" placeholder="6-digit code" autocomplete="off" maxlength="6" type="text">
       <div class="input-hint">
-        <i class="fas fa-info-circle"></i> Check your SMS or email for the code.
+        <i class="fas fa-info-circle"></i> Check your SMS or email for the code. Expires in 5 minutes.
       </div>
       <button class="btn neon-btn-lg" style="width:100%;margin-top:10px;" onclick="window.validateECOTP('${orgId}')">
         <i class="fas fa-check"></i> Validate OTP
+      </button>
+      <button class="btn neon-btn-outline" style="width:100%;margin-top:5px;" onclick="window.resendECOTP('${orgId}')">
+        <i class="fas fa-redo"></i> Resend OTP
       </button>
     </div>
   `;
@@ -57,14 +60,24 @@ window.validateECOTP = async function(orgId) {
       return;
     }
     showToast('OTP validated! Logging you in...', 'success');
+    
+    // Fetch org data first
+    const orgDoc = await getDoc(doc(db, 'organizations', orgId));
+    if (!orgDoc.exists()) {
+      showToast('Organization not found', 'error');
+      return;
+    }
+    const orgData = orgDoc.data();
+    
     // Establish EC session and open panel
     const session = getSession();
     session.role = 'ec'; 
     session.orgId = orgId; 
     window.currentOrgId = orgId;
+    window.currentOrgData = orgData;
     window.signatureState = window.signatureState || { ec:null, superAdmin:null };
     window.signatureState.ec = { 
-      name: (window.currentOrgData && window.currentOrgData.ecName) ? window.currentOrgData.ecName : 'Election Commissioner', 
+      name: orgData.ecName || 'Election Commissioner', 
       role: 'Election Commissioner', 
       signedAt: new Date().toLocaleString(), 
       image: null 
@@ -81,6 +94,42 @@ window.validateECOTP = async function(orgId) {
     showToast("EC logged in successfully", "success");
   } catch (otpErr) {
     showToast('OTP validation error: ' + otpErr.message, 'error');
+  }
+};
+
+/**
+ * Resend OTP for EC login
+ */
+window.resendECOTP = async function(orgId) {
+  try {
+    showToast('Resending OTP...', 'info');
+    const org = window.currentOrgData;
+    if (!org) {
+      showToast('Session expired. Please refresh and try again.', 'error');
+      return;
+    }
+    
+    const credential = org.ecEmail || org.ecPhone || org.contactEmail || org.contactPhone || '';
+    const method = org.ecEmail || org.contactEmail ? 'email' : 'sms';
+    
+    if (!credential) {
+      showToast('No contact information found.', 'error');
+      return;
+    }
+    
+    const res = await fetch('/.netlify/functions/send-otp', {
+      method: 'POST',
+      body: JSON.stringify({ orgId, userId: 'ec', credential, method }),
+      headers: { 'Content-Type': 'application/json' }
+    });
+    const data = await res.json();
+    if (!data.ok) {
+      showToast('Failed to resend OTP: ' + (data.error || 'Unknown error'), 'error');
+      return;
+    }
+    showToast('OTP resent to ' + credential + '!', 'success');
+  } catch (err) {
+    showToast('Resend error: ' + err.message, 'error');
   }
 };
 
@@ -122,8 +171,19 @@ export async function loginEC() {
     // Step 1: Request OTP for EC
     try {
       showToast('Sending OTP...', 'info');
-      const method = 'sms'; // You may allow ECs to choose method if needed
-      const credential = org.ecPhone || org.ecEmail || '';
+      // Try email first, fallback to phone, then use org contact
+      const credential = org.ecEmail || org.ecPhone || org.contactEmail || org.contactPhone || '';
+      const method = org.ecEmail || org.contactEmail ? 'email' : 'sms';
+      
+      if (!credential) {
+        showToast('No contact information found. Contact Super Admin to add EC email/phone.', 'error');
+        return;
+      }
+      
+      // Store org data for later use
+      window.currentOrgData = org;
+      window.currentOrgData.id = id;
+      
       const res = await fetch('/.netlify/functions/send-otp', {
         method: 'POST',
         body: JSON.stringify({ orgId: id, userId: 'ec', credential, method }),
@@ -134,7 +194,7 @@ export async function loginEC() {
         showToast('Failed to send OTP: ' + (data.error || 'Unknown error'), 'error');
         return;
       }
-      showToast('OTP sent! Please check your ' + method + '.', 'success');
+      showToast('OTP sent to ' + credential + ' via ' + method + '!', 'success');
       // Show OTP input field
       showECOTPInput(id);
       return;

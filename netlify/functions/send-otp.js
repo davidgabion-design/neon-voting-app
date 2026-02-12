@@ -63,7 +63,7 @@ exports.handler = async (event) => {
 
     // Send OTP via the appropriate method
     let sendResult = { ok: false };
-    const appUrl = process.env.APP_URL || 'https://neonvotingsystemz.netlify.app';
+    const appUrl = process.env.APP_URL || 'https://neonvotingsystem.netlify.app';
     try {
       let response;
       if (method === 'sms') {
@@ -75,7 +75,7 @@ exports.handler = async (event) => {
       } else if (method === 'email') {
         response = await fetch(`${appUrl}/.netlify/functions/send-email`, {
           method: 'POST',
-          body: JSON.stringify({ to: credential, subject: 'Your OTP', message: `Your OTP is: ${otp}` }),
+          body: JSON.stringify({ to: credential, subject: 'Your Neon Voting OTP', text: `Your OTP code is: ${otp}. Valid for 5 minutes.`, html: `<div style="font-family: Arial, sans-serif; padding: 20px; background: #0a0e27; color: #00eaff;"><h2 style="color: #9D00FF;">Your OTP Code</h2><p style="font-size: 24px; font-weight: bold; color: #00ffaa;">${otp}</p><p style="color: #888;">This code expires in 5 minutes.</p></div>` }),
           headers: { 'Content-Type': 'application/json' }
         });
       } else if (method === 'whatsapp') {

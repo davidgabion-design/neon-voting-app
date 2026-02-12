@@ -17,10 +17,13 @@ function showOTPInput(orgId, voterDocId) {
       </label>
       <input id="voterOtp" class="input" placeholder="6-digit code" autocomplete="off" maxlength="6" type="text">
       <div class="input-hint">
-        <i class="fas fa-info-circle"></i> Check your email, SMS, or WhatsApp for the code.
+        <i class="fas fa-info-circle"></i> Check your email, SMS, or WhatsApp for the code. Expires in 5 minutes.
       </div>
       <button class="btn neon-btn-lg" style="width:100%;margin-top:10px;" onclick="window.validateVoterOTP('${orgId}','${voterDocId}')">
         <i class="fas fa-check"></i> Validate OTP
+      </button>
+      <button class="btn neon-btn-outline" style="width:100%;margin-top:5px;" onclick="window.resendVoterOTP('${orgId}','${voterDocId}')">
+        <i class="fas fa-redo"></i> Resend OTP
       </button>
     </div>
   `;
@@ -49,17 +52,104 @@ window.validateVoterOTP = async function(orgId, voterDocId) {
       return;
     }
     showToast('OTP validated! Logging you in...', 'success');
-    // Proceed to fetch voter document and continue login
-    // ...existing code for successful login...
-    // You may want to call loadVotingBallot() or redirect as needed
-    // For now, reload page or call loginVoterWithCredential again to continue
-    setTimeout(() => {
-      window.location.reload();
-    }, 1000);
+    
+    // Continue with login flow - fetch voter and org data
+    try {
+      const orgDoc = await getDoc(doc(db, 'organizations', orgId));
+      if (!orgDoc.exists()) {
+        showToast('Organization not found', 'error');
+        return;
+      }
+      const orgData = orgDoc.data();
+      
+      const voterDoc = await getDoc(doc(db, 'organizations', orgId, 'voters', voterDocId));
+      if (!voterDoc.exists()) {
+        showToast('Voter not found', 'error');
+        return;
+      }
+      const voterData = voterDoc.data();
+      
+      // Check if voter is replaced
+      if (voterData.isReplaced) {
+        showToast('This voter account has been replaced. Contact EC.', 'error');
+        return;
+      }
+      
+      // Check if already voted
+      if (voterData.hasVoted) {
+        window.currentOrgId = orgId;
+        window.currentOrgData = orgData;
+        window.voterData = voterData;
+        sessionStorage.setItem('voterViewMode', 'readonly');
+        sessionStorage.setItem('voterOrgId', orgId);
+        sessionStorage.setItem('voterData', JSON.stringify(voterData));
+        showToast('You have already voted. Showing results...', 'info');
+        setTimeout(() => {
+          showVoterLiveDashboard(orgId, voterData);
+        }, 1500);
+        return;
+      }
+      
+      // Successful login - load ballot
+      window.currentOrgId = orgId;
+      window.currentOrgData = orgData;
+      window.voterData = voterData;
+      window.voterDocId = voterDocId;
+      sessionStorage.setItem('voterViewMode', 'active');
+      sessionStorage.setItem('voterOrgId', orgId);
+      sessionStorage.setItem('voterData', JSON.stringify(voterData));
+      
+      await writeAudit({
+        type: 'voter_login',
+        orgId: orgId,
+        voterName: voterData.name,
+        message: 'Voter logged in via OTP'
+      });
+      
+      setTimeout(() => {
+        loadVotingBallot();
+      }, 1000);
+      
+    } catch (loginErr) {
+      showToast('Login error: ' + loginErr.message, 'error');
+    }
   } catch (otpErr) {
     showToast('OTP validation error: ' + otpErr.message, 'error');
   }
 };
+
+/**
+ * Resend OTP for voter login
+ */
+window.resendVoterOTP = async function(orgId, voterDocId) {
+  try {
+    showToast('Resending OTP...', 'info');
+    
+    // Get the credential and method from session storage or prompt user
+    const savedMethod = sessionStorage.getItem('voterOTPMethod') || 'email';
+    const savedCredential = sessionStorage.getItem('voterOTPCredential') || '';
+    
+    if (!savedCredential) {
+      showToast('Session expired. Please refresh and try again.', 'error');
+      return;
+    }
+    
+    const res = await fetch('/.netlify/functions/send-otp', {
+      method: 'POST',
+      body: JSON.stringify({ orgId, userId: voterDocId, credential: savedCredential, method: savedMethod }),
+      headers: { 'Content-Type': 'application/json' }
+    });
+    const data = await res.json();
+    if (!data.ok) {
+      showToast('Failed to resend OTP: ' + (data.error || 'Unknown error'), 'error');
+      return;
+    }
+    showToast('OTP resent to ' + savedCredential + '!', 'success');
+  } catch (err) {
+    showToast('Resend error: ' + err.message, 'error');
+  }
+};
+
 /**
  * Voter Module - Login
  * Handles voter authentication and credential management
@@ -425,6 +515,11 @@ export async function loginVoterWithCredential() {
       showToast('Sending OTP...', 'info');
       const method = emailVisible ? 'email' : phoneVisible ? 'sms' : 'email';
       const credential = emailVisible ? email : phoneVisible ? phone : singleField;
+      
+      // Store for resend functionality
+      sessionStorage.setItem('voterOTPMethod', method);
+      sessionStorage.setItem('voterOTPCredential', credential);
+      
       const res = await fetch('/.netlify/functions/send-otp', {
         method: 'POST',
         body: JSON.stringify({ orgId, userId: voterDocId, credential, method }),

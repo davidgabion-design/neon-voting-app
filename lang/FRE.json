@@ -271,5 +271,22 @@
   "recent_organizations": "Organisations Récentes",
   "loading": "Chargement",
   "election_status": "État de l'Élection",
-  "created": "Créé"
+  "created": "Créé",
+  "super_admin_desc": "Créer des organisations, approuver des élections, gérer les paramètres.",
+  "global_dashboard": "Tableau de Bord Global",
+  "live_overview": "Aperçu en direct des élections et de l'activité de vote",
+  "updated": "Mis à jour",
+  "last_updated": "Dernière mise à jour",
+  "total_organizations": "ORGANISATIONS TOTALES",
+  "active_elections": "ÉLECTIONS ACTIVES",
+  "scheduled_elections": "ÉLECTIONS PROGRAMMÉES",
+  "declared_results": "RÉSULTATS DÉCLARÉS",
+  "total_votes_today": "VOTES TOTAUX AUJOURD'HUI",
+  "total_voters": "ÉLECTEURS TOTAUX",
+  "total_votes_cast": "VOTES TOTAUX EXPRIMÉS",
+  "approved_elections": "ÉLECTIONS APPROUVÉES",
+  "avg_turnout": "PARTICIPATION MOYENNE",
+  "avg_participation": "PARTICIPATION MOY",
+  "pending_approvals": "APPROBATIONS EN ATTENTE",
+  "administrators": "Administrateurs"
 }

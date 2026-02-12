@@ -271,5 +271,22 @@
   "recent_organizations": "Organizações Recentes",
   "loading": "Carregando",
   "election_status": "Status da Eleição",
-  "created": "Criado"
+  "created": "Criado",
+  "super_admin_desc": "Criar organizações, aprovar eleições, gerenciar configurações.",
+  "global_dashboard": "Painel Global",
+  "live_overview": "Visão ao vivo de eleições e atividade de votação",
+  "updated": "Atualizado",
+  "last_updated": "Última atualização",
+  "total_organizations": "ORGANIZAÇÕES TOTAIS",
+  "active_elections": "ELEIÇÕES ATIVAS",
+  "scheduled_elections": "ELEIÇÕES AGENDADAS",
+  "declared_results": "RESULTADOS DECLARADOS",
+  "total_votes_today": "VOTOS TOTAIS HOJE",
+  "total_voters": "ELEITORES TOTAIS",
+  "total_votes_cast": "VOTOS TOTAIS EXPRESSOS",
+  "approved_elections": "ELEIÇÕES APROVADAS",
+  "avg_turnout": "PARTICIPAÇÃO MÉDIA",
+  "avg_participation": "PARTICIPAÇÃO MÉDIA",
+  "pending_approvals": "APROVAÇÕES PENDENTES",
+  "administrators": "Administradores"
 }

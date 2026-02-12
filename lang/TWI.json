@@ -285,5 +285,22 @@
   "type": "Sɔ",
   "voters": "Nnipa a Wɔtoo Aba",
   "votes": "Aba",
-  "created": "Wɔyɛɛ"
+  "created": "Wɔyɛɛ",
+  "super_admin_desc": "Yɛ ahyehyɛde, sɔ abato ano, hwɛ nhyehyɛe so.",
+  "global_dashboard": "Wiase Nyinaa Dasebɔɔdo",
+  "live_overview": "Abato ne abato ho nsɛm a ɛrekɔ so",
+  "updated": "Wɔayɛ foforɔ",
+  "last_updated": "Nea Wɔyɛɛ foforɔ akyi",
+  "total_organizations": "AHYEHYƐDE NYINAA",
+  "active_elections": "ABATO A ƐREKƆ SO",
+  "scheduled_elections": "ABATO A WƆAHYEHYƐ",
+  "declared_results": "NNEƐMA A WƆPAEE MU",
+  "total_votes_today": "ABA A WƆATOO NNE",
+  "total_voters": "NNIPA A WƆTOO ABA NYINAA",
+  "total_votes_cast": "ABA A WƆATOO NYINAA",
+  "approved_elections": "ABATO A WƆAPENE SO",
+  "avg_turnout": "NNIPA DODOW BƆKOO",
+  "avg_participation": "NNIPA DODOW BƆKOO",
+  "pending_approvals": "MPENE A ƐREHYƐ",
+  "administrators": "Adwumayɛfo"
 }

@@ -275,5 +275,22 @@
   "type": "Type",
   "voters": "Voters",
   "votes": "Votes",
-  "created": "Created"
+  "created": "Created",
+  "super_admin_desc": "Create organizations, approve elections, manage settings.",
+  "global_dashboard": "Global Dashboard",
+  "live_overview": "Live overview of elections and voting activity",
+  "updated": "Updated",
+  "last_updated": "Last updated",
+  "total_organizations": "TOTAL ORGANIZATIONS",
+  "active_elections": "ACTIVE ELECTIONS",
+  "scheduled_elections": "SCHEDULED ELECTIONS",
+  "declared_results": "DECLARED RESULTS",
+  "total_votes_today": "TOTAL VOTES TODAY",
+  "total_voters": "TOTAL VOTERS",
+  "total_votes_cast": "TOTAL VOTES CAST",
+  "approved_elections": "APPROVED ELECTIONS",
+  "avg_turnout": "AVG. TURNOUT",
+  "avg_participation": "AVG PARTICIPATION",
+  "pending_approvals": "PENDING APPROVALS",
+  "administrators": "Administrators"
 }

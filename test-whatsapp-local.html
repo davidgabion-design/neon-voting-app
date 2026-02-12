@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test WhatsApp Function - Local Testing</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h2 {
+            color: #25D366;
+            margin-top: 0;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #333;
+        }
+        input, textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+        textarea {
+            min-height: 100px;
+            resize: vertical;
+            font-family: inherit;
+        }
+        button {
+            background-color: #25D366;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            width: 100%;
+            margin-top: 10px;
+        }
+        button:hover {
+            background-color: #20BA5A;
+        }
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        #result {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 4px;
+            border-left: 4px solid #25D366;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .error {
+            border-left-color: #dc3545;
+            background-color: #f8d7da;
+        }
+        .success {
+            border-left-color: #28a745;
+            background-color: #d4edda;
+        }
+        .info {
+            background-color: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+        }
+        .info strong {
+            color: #856404;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>📱 WhatsApp Function - Local Test</h2>
+        
+        <div class="info">
+            <strong>⚠️ Before Testing:</strong>
+            <ol style="margin: 10px 0 0 0; padding-left: 20px;">
+                <li>Make sure you have a <code>.env</code> file with your Twilio credentials</li>
+                <li>Run <code>netlify dev</code> in your terminal</li>
+                <li>Recipients must join your Twilio WhatsApp Sandbox first</li>
+            </ol>
+        </div>
+
+        <div class="form-group">
+            <label for="phone">📞 Phone Number (with country code)</label>
+            <input type="tel" id="phone" placeholder="+1234567890" value="+1" />
+            <small style="color: #666;">Format: +[country code][number] (e.g., +14155238886)</small>
+        </div>
+
+        <div class="form-group">
+            <label for="message">💬 Message</label>
+            <textarea id="message" placeholder="Enter your test message here...">Hello! This is a test message from the voting app WhatsApp function.</textarea>
+        </div>
+
+        <div class="form-group">
+            <label for="voterName">👤 Voter Name (optional)</label>
+            <input type="text" id="voterName" placeholder="Test Voter" value="Test Voter" />
+        </div>
+
+        <div class="form-group">
+            <label for="voterPin">🔑 Voter PIN (optional)</label>
+            <input type="text" id="voterPin" placeholder="1234" value="1234" />
+        </div>
+
+        <div class="form-group">
+            <label for="orgId">🏢 Organization ID (optional)</label>
+            <input type="text" id="orgId" placeholder="test-org" value="test-org" />
+        </div>
+
+        <div class="form-group">
+            <label for="endpoint">🔗 Function Endpoint</label>
+            <input type="text" id="endpoint" value="http://localhost:8888/.netlify/functions/send-whatsapp" />
+        </div>
+
+        <button onclick="testWhatsApp()" id="sendBtn">Send Test WhatsApp</button>
+
+        <div id="result" style="display: none;"></div>
+    </div>
+
+    <script>
+        async function testWhatsApp() {
+            const phone = document.getElementById('phone').value.trim();
+            const message = document.getElementById('message').value.trim();
+            const voterName = document.getElementById('voterName').value.trim();
+            const voterPin = document.getElementById('voterPin').value.trim();
+            const orgId = document.getElementById('orgId').value.trim();
+            const endpoint = document.getElementById('endpoint').value.trim();
+            const resultDiv = document.getElementById('result');
+            const sendBtn = document.getElementById('sendBtn');
+
+            // Validate inputs
+            if (!phone || phone === '+') {
+                alert('Please enter a valid phone number');
+                return;
+            }
+
+            if (!message) {
+                alert('Please enter a message');
+                return;
+            }
+
+            // Show loading state
+            sendBtn.disabled = true;
+            sendBtn.textContent = 'Sending...';
+            resultDiv.style.display = 'block';
+            resultDiv.className = '';
+            resultDiv.textContent = '⏳ Sending WhatsApp message...\n';
+
+            try {
+                const requestBody = {
+                    to: phone,
+                    message: message,
+                    voterName: voterName || 'Test Voter',
+                    voterPin: voterPin || '0000',
+                    orgId: orgId || 'test-org'
+                };
+
+                resultDiv.textContent += '\n📤 Request:\n' + JSON.stringify(requestBody, null, 2) + '\n\n';
+
+                const response = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json' 
+                    },
+                    body: JSON.stringify(requestBody)
+                });
+
+                const result = await response.json();
+                
+                resultDiv.textContent += '📥 Response:\n';
+                resultDiv.textContent += 'Status Code: ' + response.status + '\n\n';
+                resultDiv.textContent += JSON.stringify(result, null, 2);
+
+                if (response.ok && result.ok) {
+                    resultDiv.classList.add('success');
+                    resultDiv.textContent = '✅ SUCCESS!\n\n' + resultDiv.textContent;
+                } else {
+                    resultDiv.classList.add('error');
+                    resultDiv.textContent = '❌ FAILED\n\n' + resultDiv.textContent;
+                }
+
+            } catch (error) {
+                resultDiv.classList.add('error');
+                resultDiv.textContent = '❌ ERROR\n\n';
+                resultDiv.textContent += 'Network Error: ' + error.message + '\n\n';
+                resultDiv.textContent += 'Common causes:\n';
+                resultDiv.textContent += '- Netlify Dev is not running (run: netlify dev)\n';
+                resultDiv.textContent += '- Wrong endpoint URL\n';
+                resultDiv.textContent += '- CORS issues\n';
+                console.error('Test error:', error);
+            } finally {
+                sendBtn.disabled = false;
+                sendBtn.textContent = 'Send Test WhatsApp';
+            }
+        }
+
+        // Allow Enter key in inputs to trigger send
+        document.querySelectorAll('input').forEach(input => {
+            input.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    testWhatsApp();
+                }
+            });
+        });
+    </script>
+</body>
+</html>

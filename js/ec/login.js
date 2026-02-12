@@ -324,4 +324,18 @@ if (typeof window !== 'undefined') {
   window.openECPanel = openECPanel;
   window.updateECUI = updateECUI;
   window.restoreECSession = restoreECSession;
+  
+  // Auto-fill org ID from invite link
+  window.addEventListener('load', () => {
+    const inviteOrgId = sessionStorage.getItem('inviteOrgId');
+    if (inviteOrgId) {
+      const orgIdField = document.getElementById('ec-org-id');
+      if (orgIdField) {
+        orgIdField.value = inviteOrgId;
+        console.log('✅ Pre-filled EC org ID from invite link:', inviteOrgId);
+        // Clear it so it doesn't persist
+        sessionStorage.removeItem('inviteOrgId');
+      }
+    }
+  });
 }

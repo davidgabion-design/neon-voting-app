@@ -117,7 +117,7 @@ export async function sendVoterInviteSMS(voterPhone, voterName) {
     console.log("📱 Phone length (should be 13):", formattedPhone.length);
     
     const appUrl = (typeof window !== 'undefined' && window.APP_URL) ? window.APP_URL : window.location.origin;
-    const message = `Hi ${voterName}! You're invited to vote in ${window.currentOrgData.name || window.currentOrgId} election. Visit: ${appUrl} Use Org ID: ${window.currentOrgId} and your phone to log in. 🗳️`;
+    const message = `Hi ${voterName}! You're invited to vote in ${window.currentOrgData.name || window.currentOrgId} election. Visit: ${appUrl}?role=voter&org=${window.currentOrgId} and log in with your phone. 🗳️`;
     
     console.log("📱 SMS Message:", message);
     console.log("📱 Message length:", message.length);
@@ -222,7 +222,7 @@ export async function sendVoterInviteWhatsApp(voterPhone, voterName) {
     }
     
     const appUrl = window.location.origin;
-    const message = `Hi ${voterName}! You're invited to vote in ${window.currentOrgData.name || window.currentOrgId} election. Visit: ${appUrl} Use Org ID: ${window.currentOrgId} 🗳️`;
+    const message = `Hi ${voterName}! You're invited to vote in ${window.currentOrgData.name || window.currentOrgId} election. Visit: ${appUrl}?role=voter&org=${window.currentOrgId} and log in. 🗳️`;
     
     showToast("Sending WhatsApp invitation...", "info");
     

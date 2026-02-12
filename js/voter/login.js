@@ -1021,4 +1021,18 @@ if (typeof window !== 'undefined') {
   window.debugVoterStatus = debugVoterStatus;
   window.restoreVoterSession = restoreVoterSession;
   window.logoutVoter = logoutVoter;
+  
+  // Auto-fill org ID from invite link
+  window.addEventListener('load', () => {
+    const inviteOrgId = sessionStorage.getItem('inviteOrgId');
+    if (inviteOrgId) {
+      const orgIdField = document.getElementById('voterOrgId');
+      if (orgIdField) {
+        orgIdField.value = inviteOrgId;
+        console.log('✅ Pre-filled Voter org ID from invite link:', inviteOrgId);
+        // Clear it so it doesn't persist
+        sessionStorage.removeItem('inviteOrgId');
+      }
+    }
+  });
 }

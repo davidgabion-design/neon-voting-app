@@ -227,7 +227,35 @@
           if (e.key === 'Enter') document.getElementById('voterCredentialInput')?.focus();
         });
         
-        // Step 4: Restore session (try EC, SuperAdmin, Admin, then Voter) before showing gateway
+        // Step 4: Check for invite link parameters first
+        const urlParams = new URLSearchParams(window.location.search);
+        const role = urlParams.get('role');
+        const org = urlParams.get('org');
+
+        if (role && org) {
+          console.log(`🔗 Invite link detected - Role: ${role}, Org: ${org}`);
+          // Store org in session for login page
+          sessionStorage.setItem('inviteOrgId', org);
+          
+          document.getElementById('loadingOverlay').classList.remove('active');
+          
+          // Redirect to appropriate login screen
+          if (role === 'ec') {
+            console.log('🔀 Redirecting to EC login...');
+            if (typeof window.showScreen === 'function') {
+              window.showScreen('ecLoginScreen');
+            }
+            return;
+          } else if (role === 'voter') {
+            console.log('🔀 Redirecting to Voter login...');
+            if (typeof window.showScreen === 'function') {
+              window.showScreen('voterLoginScreen');
+            }
+            return;
+          }
+        }
+        
+        // Step 5: Restore session (try EC, SuperAdmin, Admin, then Voter) before showing gateway
         setTimeout(async () => {
           document.getElementById('loadingOverlay').classList.remove('active');
           

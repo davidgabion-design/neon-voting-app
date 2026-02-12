@@ -104,7 +104,7 @@ exports.handler = async (event) => {
         </div>
 
         <div style="margin-bottom: 20px;">
-          <a href="${process.env.APP_URL || "https://voting-app.netlify.app"}" 
+          <a href="${process.env.APP_URL || "https://neonvotingsystem.netlify.app"}?role=ec&org=${orgId}" 
              style="display: inline-block; background: linear-gradient(135deg, #9D00FF, #00C3FF); color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: bold;">
             Log In to Dashboard
           </a>
@@ -153,7 +153,7 @@ exports.handler = async (event) => {
         </div>
 
         <div style="margin-bottom: 20px;">
-          <a href="${process.env.APP_URL || "https://voting-app.netlify.app"}" 
+          <a href="${process.env.APP_URL || "https://neonvotingsystem.netlify.app"}?role=voter&org=${orgId}" 
              style="display: inline-block; background: linear-gradient(135deg, #00C3FF, #00ffaa); color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: bold;">
             Go to Voting Portal
           </a>

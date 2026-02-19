@@ -16,7 +16,13 @@ import { collection, addDoc, serverTimestamp } from 'https://www.gstatic.com/fir
 export async function writeAudit(orgId, action, actor, meta) {
   try {
     if (!orgId) return;
-    await addDoc(collection(db, "organizations", orgId, "audit_logs"), {
+    // Ensure orgId is a valid string
+    const orgIdStr = String(orgId).trim();
+    if (!orgIdStr || orgIdStr === 'undefined' || orgIdStr === 'null') {
+      console.warn('Invalid orgId for audit:', orgId);
+      return;
+    }
+    await addDoc(collection(db, "organizations", orgIdStr, "audit_logs"), {
       action: String(action || ""),
       actor: String(actor || ""),
       meta: meta || {},

@@ -19,13 +19,22 @@ export async function loadVotingBallot(orgId) {
   const screen = document.getElementById('votingScreen');
   if (!screen) return;
   
+  // Ensure orgId is a valid string
+  const orgIdStr = String(orgId || '').trim();
+  if (!orgIdStr || orgIdStr === 'undefined' || orgIdStr === 'null') {
+    renderError('votingScreen', 'Invalid organization ID', () => {
+      showScreen('voterLoginScreen');
+    });
+    return;
+  }
+  
   showQuickLoading('votingScreen', 'Loading Ballot');
   
   try {
     const [positionsSnap, candidatesSnap, orgSnap] = await Promise.all([
-      getDocs(collection(db, "organizations", orgId, "positions")),
-      getDocs(collection(db, "organizations", orgId, "candidates")),
-      getDoc(doc(db, "organizations", orgId))
+      getDocs(collection(db, "organizations", orgIdStr, "positions")),
+      getDocs(collection(db, "organizations", orgIdStr, "candidates")),
+      getDoc(doc(db, "organizations", orgIdStr))
     ]);
     
     // ✅ Show first-time voter walkthrough

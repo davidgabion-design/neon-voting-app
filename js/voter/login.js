@@ -34,6 +34,16 @@ function showOTPInput(orgId, voterDocId) {
  * Validate OTP for voter login
  */
 window.validateVoterOTP = async function(orgId, voterDocId) {
+  // Ensure parameters are strings (not undefined or objects)
+  orgId = String(orgId || '').trim();
+  voterDocId = String(voterDocId || '').trim();
+  
+  if (!orgId || !voterDocId) {
+    showToast('Invalid login parameters. Please try again.', 'error');
+    showScreen('voterLoginScreen');
+    return;
+  }
+  
   const otp = document.getElementById('voterOtp')?.value.trim();
   if (!otp) {
     showToast('Please enter the OTP code', 'error');

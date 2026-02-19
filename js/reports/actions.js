@@ -52,9 +52,21 @@ export function declareResultsConfirm() {
         <p style="color: #9beaff; margin-bottom: 20px;">
           This will lock voting and mark the election as completed. Voters will no longer be able to vote.
         </p>
-        <div style="background: rgba(157, 0, 255, 0.1); padding: 12px; border-radius: 8px; border: 1px solid rgba(157, 0, 255, 0.3);">
+        <div style="background: rgba(157, 0, 255, 0.1); padding: 12px; border-radius: 8px; border: 1px solid rgba(157, 0, 255, 0.3); margin-bottom: 20px;">
           <div style="color: #9D00FF; font-size: 12px;">
             <i class="fas fa-exclamation-circle"></i> Note: This action cannot be reversed!
+          </div>
+        </div>
+        
+        <div style="background:rgba(0,255,255,0.05);padding:15px;border-radius:8px;border:1px solid rgba(0,255,255,0.2);text-align:left;">
+          <label style="display:flex;align-items:center;gap:10px;cursor:pointer;color:#00eaff;">
+            <input type="checkbox" id="sendResultsNotifications" checked style="width:18px;height:18px;cursor:pointer;">
+            <span style="font-size:14px;font-weight:600;">
+              <i class="fas fa-envelope"></i> Send results to all voters & candidates via email
+            </span>
+          </label>
+          <div style="color:#888;font-size:12px;margin-top:8px;margin-left:28px;">
+            Recommended: Notify everyone automatically when results are declared
           </div>
         </div>
       </div>
@@ -72,6 +84,10 @@ export function declareResultsConfirm() {
 
 export async function declareResults() {
   try {
+    const shouldSendNotifications = document.getElementById('sendResultsNotifications')?.checked;
+    
+    showToast('Declaring results...', 'info');
+    
     const orgRef = doc(db, "organizations", window.currentOrgId);
     await updateDoc(orgRef, {
       electionStatus: 'declared',
@@ -80,6 +96,21 @@ export async function declareResults() {
     
     showToast('Results declared successfully! Voting is now locked.', 'success');
     document.querySelector('.modal-overlay')?.remove();
+    
+    // Send notifications if checked
+    if (shouldSendNotifications) {
+      showToast('Sending results to voters and candidates...', 'info');
+      
+      try {
+        // Import and call the notification function
+        const { sendResultsNotifications } = await import('../shared/results-notifications.js');
+        await sendResultsNotifications(window.currentOrgId, { sendEmail: true });
+      } catch (notifError) {
+        console.error('Error sending notifications:', notifError);
+        showToast('Results declared, but failed to send notifications: ' + notifError.message, 'warning');
+      }
+    }
+    
     loadECSettings();
   } catch(e) {
     console.error('Error declaring results:', e);

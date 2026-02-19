@@ -4,3 +4,4 @@ export * from './timers.js';
 export * from './realtime.js';
 export * from './alerts.js';
 export * from './election-utils.js';
+export * from './results-notifications.js';

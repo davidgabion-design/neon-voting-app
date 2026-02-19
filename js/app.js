@@ -234,6 +234,7 @@ window.send30MinAlerts = shared.send30MinAlerts;
 window.sendVoteStartAlerts = shared.sendVoteStartAlerts;
 window.startAlertScheduler = shared.startAlertScheduler;
 window.stopAlertScheduler = shared.stopAlertScheduler;
+window.sendResultsNotifications = shared.sendResultsNotifications;
 
 // Export activity/audit logging
 window.logActivity = activity.logActivity;

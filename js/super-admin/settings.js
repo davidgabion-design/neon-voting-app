@@ -16,22 +16,22 @@ export async function loadSuperSettings() {
   
   el.innerHTML = `
     <div class="card">
-      <h3><i class="fas fa-user-shield"></i> SuperAdmin Security</h3>
-      <label class="label">Change SuperAdmin Password</label>
-      <input id="new-super-pass" class="input" placeholder="New password (min 8 characters)" type="password">
+      <h3><i class="fas fa-user-shield"></i> <span data-i18n="super_admin_security">SuperAdmin Security</span></h3>
+      <label class="label" data-i18n="change_super_admin_password">Change SuperAdmin Password</label>
+      <input id="new-super-pass" class="input" data-i18n-placeholder="new_password_placeholder" placeholder="New password (min 8 characters)" type="password">
       <div style="margin-top:10px">
         <button class="btn neon-btn" onclick="window.changeSuperPassword()">
-          <i class="fas fa-key"></i> Change Password
+          <i class="fas fa-key"></i> <span data-i18n="change_password">Change Password</span>
         </button>
       </div>
     </div>
 
     <div class="card" style="margin-top:20px">
-      <h3><i class="fas fa-building"></i> Create New Organization</h3>
-      <p class="subtext">Quick organization creation is now available in the Organizations tab.</p>
+      <h3><i class="fas fa-building"></i> <span data-i18n="create_new_organization">Create New Organization</span></h3>
+      <p class="subtext" data-i18n="quick_org_creation_desc">Quick organization creation is now available in the Organizations tab.</p>
       <div style="margin-top:15px">
         <button class="btn neon-btn" onclick="window.showCreateOrgModal()">
-          <i class="fas fa-plus-circle"></i> Create Organization
+          <i class="fas fa-plus-circle"></i> <span data-i18n="create_organization">Create Organization</span>
         </button>
       </div>
     </div>

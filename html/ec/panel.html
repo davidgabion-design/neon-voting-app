@@ -61,6 +61,9 @@
       <button class="tab-btn" data-ec-tab="approval">
         <i class="fas fa-check-circle"></i> <span data-i18n="approval">Approval</span>
       </button>
+      <button class="tab-btn" data-ec-tab="help">
+        <i class="fas fa-headset"></i> <span data-i18n="help">Help</span>
+      </button>
     </div>
 
     <div style="margin-top:14px">
@@ -464,6 +467,68 @@ jane@example.com, Jane Smith, 5678
             
             <div id="approvalMessage" class="subtext" style="margin-top: 8px"></div>
           </div>
+        </div>
+      </div>
+
+      <!-- Help Tab (Contact Super Admin) -->
+      <div id="ecContent-help" class="ec-content" style="display: none;">
+        <div class="card">
+          <h3><i class="fas fa-headset"></i> Contact Support</h3>
+          <p class="subtext">Need help with your election? Reach out to the platform administrators.</p>
+          
+          <div class="contact-options" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 15px; margin-top: 20px;">
+            
+            <!-- WhatsApp Contact -->
+            <div class="contact-card" style="padding: 20px; border: 1px solid rgba(0,255,170,0.2); border-radius: 12px; background: rgba(0,255,170,0.05); text-align: center;">
+              <i class="fab fa-whatsapp" style="font-size: 48px; color: #25D366; margin-bottom: 10px;"></i>
+              <h4 style="margin: 10px 0;">WhatsApp Support</h4>
+              <p style="font-size: 13px; opacity: 0.8; margin-bottom: 15px;">Get instant responses</p>
+              <button class="btn neon-btn" onclick="window.contactSuperAdminWhatsApp()" style="width: 100%; background: linear-gradient(135deg, #25D366, #128C7E);">
+                <i class="fab fa-whatsapp"></i> Chat Now
+              </button>
+            </div>
+            
+            <!-- Email Contact -->
+            <div class="contact-card" style="padding: 20px; border: 1px solid rgba(0,170,255,0.2); border-radius: 12px; background: rgba(0,170,255,0.05); text-align: center;">
+              <i class="fas fa-envelope" style="font-size: 48px; color: #00aaff; margin-bottom: 10px;"></i>
+              <h4 style="margin: 10px 0;">Email Support</h4>
+              <p style="font-size: 13px; opacity: 0.8; margin-bottom: 15px;">For detailed inquiries</p>
+              <button class="btn neon-btn" onclick="window.contactSuperAdminEmail()" style="width: 100%; background: linear-gradient(135deg, #00aaff, #0066cc);">
+                <i class="fas fa-envelope"></i> Send Email
+              </button>
+            </div>
+            
+            <!-- FAQ / Docs -->
+            <div class="contact-card" style="padding: 20px; border: 1px solid rgba(255,170,0,0.2); border-radius: 12px; background: rgba(255,170,0,0.05); text-align: center;">
+              <i class="fas fa-book" style="font-size: 48px; color: #ffa500; margin-bottom: 10px;"></i>
+              <h4 style="margin: 10px 0;">Documentation</h4>
+              <p style="font-size: 13px; opacity: 0.8; margin-bottom: 15px;">Guides and tutorials</p>
+              <button class="btn neon-btn-outline" onclick="window.openDocumentation()" style="width: 100%;">
+                <i class="fas fa-book-open"></i> View Docs
+              </button>
+            </div>
+            
+          </div>
+          
+          <!-- Quick Help Topics -->
+          <div style="margin-top: 30px;">
+            <h4><i class="fas fa-question-circle"></i> Common Topics</h4>
+            <div class="help-topics" style="display: grid; gap: 10px; margin-top: 15px;">
+              <button class="btn neon-btn-outline" onclick="window.sendQuickWhatsApp('How do I add voters in bulk?')" style="justify-content: flex-start; text-align: left;">
+                <i class="fas fa-users"></i> Adding voters in bulk
+              </button>
+              <button class="btn neon-btn-outline" onclick="window.sendQuickWhatsApp('My election was rejected. What should I fix?')" style="justify-content: flex-start; text-align: left;">
+                <i class="fas fa-times-circle"></i> Election rejection help
+              </button>
+              <button class="btn neon-btn-outline" onclick="window.sendQuickWhatsApp('How do I schedule my election?')" style="justify-content: flex-start; text-align: left;">
+                <i class="fas fa-clock"></i> Scheduling elections
+              </button>
+              <button class="btn neon-btn-outline" onclick="window.sendQuickWhatsApp('I need to update candidate information')" style="justify-content: flex-start; text-align: left;">
+                <i class="fas fa-user-edit"></i> Updating candidate info
+              </button>
+            </div>
+          </div>
+          
         </div>
       </div>
     </div>

@@ -75,7 +75,7 @@ export async function loadLanguage(lang = 'ENG', autoRefresh = true) {
 /**
  * Apply translations to all elements with data-i18n attributes
  */
-function applyTranslations() {
+export function applyTranslations() {
   let translatedCount = 0;
   document.querySelectorAll('[data-i18n]').forEach(el => {
     const key = el.dataset.i18n;

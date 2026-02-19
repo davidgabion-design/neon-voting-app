@@ -429,7 +429,7 @@ Before going to production:
 - [ ] Test with real SMS service (Twilio account configured)
 - [ ] Set environment variables:
   - SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, SMTP_FROM
-  - TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_PHONE_NUMBER
+   - TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_SENDER_E164
 - [ ] Configure Firestore security rules for invites collection
 - [ ] Set up email/SMS rate limits
 - [ ] Test with production data volume

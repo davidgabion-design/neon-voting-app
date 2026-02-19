@@ -9,6 +9,7 @@ import {
 import { showToast } from '../utils/ui-helpers.js';
 import { validateEmail } from '../utils/validation.js';
 import { getCurrentOrgId, getCurrentOrgData } from '../state/app-state.js';
+import { buildVoterSmsAlertMessage } from '../invites/templates.js';
 
 let alertSchedulerInterval = null;
 
@@ -120,7 +121,7 @@ export async function send30MinAlerts() {
             
             await addDoc(collection(db, "organizations", currentOrgId, "invites"), {
               type: "voter_alert_30min",
-              email: voterEmail,
+              recipientEmail: voterEmail,
               name: voterName,
               sentAt: serverTimestamp(),
               status: "sent",
@@ -137,7 +138,13 @@ export async function send30MinAlerts() {
 
       if (voterPhone) {
         try {
-          const message = `⏰ Hi ${voterName}! Voting for ${currentOrgData.name || 'your election'} starts in 30 minutes. Visit: ${appUrl} Org ID: ${currentOrgId} 🗳️`;
+          const message = buildVoterSmsAlertMessage({
+            voterName,
+            orgName: currentOrgData.name || 'your election',
+            orgId: currentOrgId,
+            appUrl,
+            alertType: '30min'
+          });
           
           const smsResponse = await fetch("/.netlify/functions/send-invite-sms", {
             method: "POST",
@@ -157,7 +164,7 @@ export async function send30MinAlerts() {
             
             await addDoc(collection(db, "organizations", currentOrgId, "invites"), {
               type: "voter_alert_30min_sms",
-              phone: voterPhone,
+              recipientPhone: voterPhone,
               name: voterName,
               sentAt: serverTimestamp(),
               status: "sent",
@@ -237,7 +244,7 @@ export async function sendVoteStartAlerts() {
             
             await addDoc(collection(db, "organizations", currentOrgId, "invites"), {
               type: "voter_alert_start",
-              email: voterEmail,
+              recipientEmail: voterEmail,
               name: voterName,
               sentAt: serverTimestamp(),
               status: "sent",
@@ -254,7 +261,13 @@ export async function sendVoteStartAlerts() {
 
       if (voterPhone) {
         try {
-          const message = `🗳️ Hi ${voterName}! Voting is NOW OPEN for ${currentOrgData.name || 'your election'}! Visit: ${appUrl} Org ID: ${currentOrgId} Cast your vote now! ✅`;
+          const message = buildVoterSmsAlertMessage({
+            voterName,
+            orgName: currentOrgData.name || 'your election',
+            orgId: currentOrgId,
+            appUrl,
+            alertType: 'start'
+          });
           
           const smsResponse = await fetch("/.netlify/functions/send-invite-sms", {
             method: "POST",
@@ -274,7 +287,7 @@ export async function sendVoteStartAlerts() {
             
             await addDoc(collection(db, "organizations", currentOrgId, "invites"), {
               type: "voter_alert_start_sms",
-              phone: voterPhone,
+              recipientPhone: voterPhone,
               name: voterName,
               sentAt: serverTimestamp(),
               status: "sent",

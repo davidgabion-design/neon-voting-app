@@ -1,4 +1,48 @@
 const twilio = require("twilio");
+const admin = require('firebase-admin');
+const {
+  getTwilioAuth,
+  getTwilioFromWhatsapp,
+  getTwilioStatusCallbackUrl,
+  normalizeE164,
+  requireTwilioContentSid
+} = require('./_shared/env');
+
+// Template type -> env var mapping (Content SIDs are stored in env)
+const TEMPLATE_ENV_BY_TYPE = {
+  otp: 'TWILIO_TEMPLATE_VOTER_OTP',
+  invite: 'TWILIO_TEMPLATE_VOTER_INVITE',
+  results: 'TWILIO_TEMPLATE_RESULTS_PUBLISHED',
+  ec: 'TWILIO_TEMPLATE_EC_ACCESS',
+  approved: 'TWILIO_TEMPLATE_ELECTION_APPROVED'
+};
+
+// Initialize Firebase Admin (for message logging)
+if (!admin.apps.length) {
+  try {
+    const projectId = process.env.FIREBASE_PROJECT_ID;
+    const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
+    let privateKey = process.env.FIREBASE_PRIVATE_KEY;
+
+    if (!projectId || !clientEmail || !privateKey) {
+      console.error('Missing Firebase Admin environment variables');
+    } else {
+      privateKey = privateKey.replace(/\\n/g, '\n');
+
+      admin.initializeApp({
+        credential: admin.credential.cert({
+          projectId,
+          clientEmail,
+          privateKey,
+        }),
+      });
+
+      console.log('Firebase Admin initialized successfully');
+    }
+  } catch (err) {
+    console.error('Firebase Admin initialization failed:', err);
+  }
+}
 
 exports.handler = async (event) => {
   // Handle CORS preflight
@@ -10,7 +54,7 @@ exports.handler = async (event) => {
         "Access-Control-Allow-Headers": "Content-Type",
         "Access-Control-Allow-Methods": "POST, OPTIONS"
       },
-      body: JSON.stringify({ ok: true })
+      body: ""
     };
   }
 
@@ -21,153 +65,141 @@ exports.handler = async (event) => {
         "Access-Control-Allow-Origin": "*",
         "Content-Type": "application/json"
       },
-      body: JSON.stringify({ ok: false, error: "POST only" })
+      body: JSON.stringify({ success: false, error: "POST only" })
     };
   }
-
-  let body;
-  try {
-    body = JSON.parse(event.body || "{}");
-  } catch (err) {
-    return {
-      statusCode: 400,
-      headers: {
-        "Access-Control-Allow-Origin": "*",
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({ ok: false, error: "Invalid JSON", details: err.message })
-    };
-  }
-
-  const to = String(body.to || "").trim();
-  const messageText = String(body.message || "").trim();
-  const voterName = String(body.voterName || "Voter").trim();
-  const voterPin = String(body.voterPin || "0000").trim();
-  const orgId = String(body.orgId || "").trim();
-
-  if (!to) {
-    return {
-      statusCode: 400,
-      headers: {
-        "Access-Control-Allow-Origin": "*",
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({ ok: false, error: "Missing phone number (to)" })
-    };
-  }
-
-  if (!messageText) {
-    return {
-      statusCode: 400,
-      headers: {
-        "Access-Control-Allow-Origin": "*",
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({ ok: false, error: "Missing message" })
-    };
-  }
-
-  // ✅ PATCH START – Accept whatsapp: prefix safely
-  let cleanTo = to.replace(/^whatsapp:/i, '');
-
-  // Validate phone number format
-  const phoneRegex = /^\+?[1-9]\d{1,14}$/;
-  if (!phoneRegex.test(cleanTo)) {
-    return {
-      statusCode: 400,
-      headers: {
-        "Access-Control-Allow-Origin": "*",
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({ ok: false, error: "Invalid phone number format" })
-    };
-  }
-
-  // Ensure phone number has + prefix
-  const formattedTo = cleanTo.startsWith("+") ? cleanTo : `+${cleanTo}`;
-
-  // Check for Twilio environment variables
-  const {
-    TWILIO_ACCOUNT_SID,
-    TWILIO_AUTH_TOKEN,
-    TWILIO_WHATSAPP_FROM
-  } = process.env;
-
-  console.log("Twilio Config Check:", {
-    hasSID: !!TWILIO_ACCOUNT_SID,
-    hasToken: !!TWILIO_AUTH_TOKEN,
-    hasFrom: !!TWILIO_WHATSAPP_FROM,
-    fromNumber: TWILIO_WHATSAPP_FROM
-  });
-
-  if (!TWILIO_ACCOUNT_SID || !TWILIO_AUTH_TOKEN || !TWILIO_WHATSAPP_FROM) {
-    return {
-      statusCode: 500,
-      headers: {
-        "Access-Control-Allow-Origin": "*",
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        ok: false,
-        error: "Missing Twilio configuration",
-        missing: [
-          !TWILIO_ACCOUNT_SID ? "TWILIO_ACCOUNT_SID" : null,
-          !TWILIO_AUTH_TOKEN ? "TWILIO_AUTH_TOKEN" : null,
-          !TWILIO_WHATSAPP_FROM ? "TWILIO_WHATSAPP_FROM" : null
-        ].filter(Boolean)
-      })
-    };
-  }
-
-  // Format Twilio numbers
-  const twilioFrom = TWILIO_WHATSAPP_FROM.startsWith("whatsapp:") 
-    ? TWILIO_WHATSAPP_FROM 
-    : `whatsapp:${TWILIO_WHATSAPP_FROM}`;
-  
-  const twilioTo = formattedTo.startsWith("whatsapp:") 
-    ? formattedTo 
-    : `whatsapp:${formattedTo}`;
-
-  console.log("Sending WhatsApp message:", {
-    to: twilioTo,
-    from: twilioFrom,
-    messageLength: messageText.length,
-    orgId,
-    voterName
-  });
-
-  // 🔥 DEBUG – Final payload sent to Twilio
-  console.log("FINAL TWILIO PAYLOAD:", {
-    from: twilioFrom,
-    to: twilioTo
-  });
 
   try {
+    const { type, phone, data, orgId } = JSON.parse(event.body || "{}");
+
+    // Validate required fields
+    if (!type || !phone) {
+      return {
+        statusCode: 400,
+        headers: {
+          "Access-Control-Allow-Origin": "*",
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ 
+          success: false, 
+          error: "Missing required fields: type, phone" 
+        })
+      };
+    }
+
+    // Get template SID
+    const templateEnvName = TEMPLATE_ENV_BY_TYPE[type];
+    
+    if (!templateEnvName) {
+      return {
+        statusCode: 400,
+        headers: {
+          "Access-Control-Allow-Origin": "*",
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ 
+          success: false, 
+          error: `Invalid type. Valid types: ${Object.keys(TEMPLATE_ENV_BY_TYPE).join(', ')}` 
+        })
+      };
+    }
+    let accountSid;
+    let authToken;
+    let formattedFrom;
+    let formattedTo;
+    let contentSid;
+    let cleanPhone;
+    try {
+      ({ accountSid, authToken } = getTwilioAuth());
+      formattedFrom = getTwilioFromWhatsapp();
+      cleanPhone = normalizeE164(phone, { fieldName: 'phone', allowWhatsappPrefix: true });
+      formattedTo = `whatsapp:${cleanPhone}`;
+      contentSid = requireTwilioContentSid(templateEnvName);
+    } catch (envErr) {
+      return {
+        statusCode: 500,
+        headers: {
+          "Access-Control-Allow-Origin": "*",
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ success: false, error: envErr.message })
+      };
+    }
+
+    // ✅ Format contentVariables for Twilio templates (numbered keys)
+    let contentVariables;
+
+    if (data && typeof data === "object") {
+      const keys = Object.keys(data);
+      if (keys.length) {
+        const isAlreadyNumbered = keys.every((key) => /^\d+$/.test(key));
+        const numbered = {};
+
+        if (isAlreadyNumbered) {
+          keys.forEach((key) => {
+            numbered[key] = String(data[key]);
+          });
+        } else {
+          keys.forEach((key, index) => {
+            numbered[(index + 1).toString()] = String(data[key]);
+          });
+        }
+
+        contentVariables = JSON.stringify(numbered);
+      }
+    }
+
+    // Defensive logging (no secrets)
+    console.log("[WhatsApp] Sending Template:", {
+      type,
+      to: formattedTo,
+      from: formattedFrom,
+      templateEnvName,
+      contentSidPrefix: contentSid.substring(0, 2),
+      contentVarsKeys: data ? Object.keys(data) : [],
+      contentVariablesPreview: contentVariables ? contentVariables.substring(0, 120) : null
+    });
+
     // Initialize Twilio client
-    const client = twilio(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN);
+    const client = twilio(accountSid, authToken);
 
-    // Send WhatsApp message
-    const msg = await client.messages.create({
-      from: twilioFrom,
-      to: twilioTo,
-      body: messageText,
-      // Optional: Add WhatsApp template for better deliverability
-      // contentSid: "HXxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx", // Template SID if using templates
-      // contentVariables: JSON.stringify({
-      //   "1": voterName,
-      //   "2": voterPin,
-      //   "3": orgId
-      // })
+    // Send WhatsApp message using approved template
+    const statusCallback = getTwilioStatusCallbackUrl();
+    const message = await client.messages.create({
+      from: formattedFrom,
+      to: formattedTo,
+      contentSid,
+      contentVariables: contentVariables,
+      statusCallback
     });
 
-    console.log("WhatsApp sent successfully:", {
-      sid: msg.sid,
-      status: msg.status,
-      to: msg.to,
-      from: msg.from,
-      errorCode: msg.errorCode,
-      errorMessage: msg.errorMessage
+    console.log("[WhatsApp] Enqueued:", {
+      sid: message.sid,
+      status: message.status,
+      type
     });
+
+    // ✅ LOG TO FIRESTORE (audit trail + delivery tracking)
+    if (admin.apps.length && orgId) {
+      try {
+        await admin.firestore().collection('message_logs').add({
+          type: 'whatsapp',
+          provider: 'twilio',
+          templateType: type,
+          contentSid: contentSid,
+          orgId: orgId,
+          recipient: cleanPhone,
+          messageSid: message.sid,
+          status: message.status,
+          sentAt: admin.firestore.FieldValue.serverTimestamp(),
+          variables: data || {}
+        });
+        console.log("[WhatsApp] Logged to Firestore");
+      } catch (logErr) {
+        console.error("[WhatsApp] Firestore logging failed:", logErr.message);
+        // Don't fail the request if logging fails
+      }
+    }
 
     return {
       statusCode: 200,
@@ -175,64 +207,47 @@ exports.handler = async (event) => {
         "Access-Control-Allow-Origin": "*",
         "Content-Type": "application/json"
       },
-      body: JSON.stringify({
-        ok: true,
-        provider: "twilio-whatsapp",
-        sid: msg.sid,
-        status: msg.status,
-        to: formattedTo,
-        from: TWILIO_WHATSAPP_FROM,
-        timestamp: new Date().toISOString(),
-        details: {
-          voterName,
-          orgId,
-          messageLength: messageText.length
-        }
+      body: JSON.stringify({ 
+        success: true, 
+        sid: message.sid,
+        status: message.status,
+        type,
+        timestamp: new Date().toISOString()
       })
     };
-  } catch (err) {
-    console.error("Twilio WhatsApp error:", {
-      error: err.message,
-      code: err.code,
-      moreInfo: err.moreInfo,
-      status: err.status,
-      to: twilioTo,
-      from: twilioFrom
-    });
 
-    // Provide more specific error messages
-    let errorMessage = err.message;
-    let errorCode = 500;
+  } catch (error) {
+    console.error("[WhatsApp] Error:", error);
 
-    if (err.code === 21211) {
-      errorMessage = "Invalid phone number";
-      errorCode = 400;
-    } else if (err.code === 21608) {
+    // Provide helpful error messages
+    let statusCode = 500;
+    let errorMessage = error.message;
+
+    if (error.code === 21211) {
+      statusCode = 400;
+      errorMessage = "Invalid phone number format. Use E.164: +233XXXXXXXXX";
+    } else if (error.code === 21608) {
+      statusCode = 403;
       errorMessage = "Not authorized to send to this number";
-      errorCode = 403;
-    } else if (err.code === 21612) {
-      errorMessage = "WhatsApp not enabled for this number";
-      errorCode = 400;
-    } else if (err.code === 21614) {
-      errorMessage = "WhatsApp capability not enabled for Twilio account";
-      errorCode = 500;
+    } else if (error.code === 63016) {
+      statusCode = 400;
+      errorMessage = "Template content error. Check variable mapping.";
+    } else if (error.code === 21614) {
+      statusCode = 500;
+      errorMessage = "WhatsApp not enabled for Twilio account";
     }
 
     return {
-      statusCode: errorCode,
+      statusCode,
       headers: {
         "Access-Control-Allow-Origin": "*",
         "Content-Type": "application/json"
       },
-      body: JSON.stringify({
-        ok: false,
+      body: JSON.stringify({ 
+        success: false, 
         error: errorMessage,
-        details: {
-          code: err.code,
-          moreInfo: err.moreInfo,
-          to: formattedTo,
-          suggestion: "Make sure the recipient has WhatsApp and has opted in"
-        }
+        code: error.code,
+        details: error.moreInfo
       })
     };
   }

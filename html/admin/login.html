@@ -1,6 +1,6 @@
 ﻿<section id="adminLoginScreen" class="screen">
   <div class="main-container">
-    <div class="login-card">
+    <div class="login-card" id="adminLoginCard">
       <div class="card-header">
         <div class="icon-wrapper">
           <i class="fas fa-user-shield"></i>
@@ -51,6 +51,13 @@
           <i class="fas fa-arrow-left"></i>
           <span data-i18n="back_to_gateway">Back to Gateway</span>
         </button>
+      </div>
+      
+      <!-- Date/Time Display -->
+      <div class="login-footer" style="text-align:center;padding:12px;border-top:1px solid rgba(255,255,255,0.1)">
+        <div id="adminLoginDateTime" class="subtext" style="font-size:12px;color:rgba(255,255,255,0.6)">
+          <i class="fas fa-clock"></i> <span id="adminLoginDateTimeText"></span>
+        </div>
       </div>
       
       <!-- Language Selector -->

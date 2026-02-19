@@ -7,6 +7,7 @@ import { db } from '../config/firebase.js';
 import { collection, doc, getDocs, getDoc, updateDoc, deleteDoc, serverTimestamp } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js';
 import { showToast, showQuickLoading, renderError } from '../utils/ui-helpers.js';
 import { escapeHtml } from '../utils/validation.js';
+import { buildVoterInviteTemplate } from './templates.js';
 
 /**
  * Load invites tracking dashboard
@@ -172,6 +173,17 @@ export async function resendInvite(inviteId, inviteType) {
     const invite = inviteSnap.data();
     showToast("Resending invite...", "info");
     
+    const appUrl = window.location.origin;
+    const emailTemplate = inviteType === 'voter'
+      ? buildVoterInviteTemplate({
+          voterName: invite.name || invite.email,
+          orgName: window.currentOrgData?.name || window.currentOrgId,
+          orgId: window.currentOrgId,
+          email: invite.email,
+          appUrl
+        })
+      : null;
+
     const response = await fetch("/.netlify/functions/send-invite", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -183,7 +195,8 @@ export async function resendInvite(inviteId, inviteType) {
         recipientName: invite.name || invite.email,
         credentials: inviteType === 'ec' ? 
           { password: "Check original invite" } :
-          { credential: invite.email, type: 'email' }
+          { credential: invite.email, type: 'email' },
+        emailTemplate: emailTemplate || undefined
       })
     });
     

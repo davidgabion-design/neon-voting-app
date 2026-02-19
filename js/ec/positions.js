@@ -19,6 +19,11 @@ export async function loadECPositions() {
   // Get translation function
   const t = window.t || ((key) => key);
   
+  // Check if editing is locked
+  const editLocked = window.currentOrgData && (window.currentOrgData.approval?.status === 'pending' || window.currentOrgData.approval?.status === 'approved');
+  const lockChip = editLocked ? '<i class="fas fa-lock" style="margin-left:4px;opacity:0.7;font-size:12px" title="Editing locked"></i>' : '';
+  const lockStyle = editLocked ? 'opacity:0.6;cursor:not-allowed;' : '';
+  
   showQuickLoading("ecContent-positions", "Loading Positions");
   
   try{
@@ -32,8 +37,8 @@ export async function loadECPositions() {
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
         <h3><i class="fas fa-list-ol"></i> ${t('positions')} (${positions.length})</h3>
         <div style="display:flex;gap:8px">
-          <button class="btn neon-btn" onclick="showAddPositionModal()">
-            <i class="fas fa-plus-circle"></i> ${t('add_position')}
+          <button class="btn neon-btn" onclick="showAddPositionModal()" style="${lockStyle}" ${editLocked ? 'disabled' : ''}>
+            <i class="fas fa-plus-circle"></i> ${t('add_position')}${lockChip}
           </button>
           <button class="btn neon-btn-outline" onclick="refreshPositions()">
             <i class="fas fa-redo"></i>
@@ -70,11 +75,11 @@ export async function loadECPositions() {
               </div>
             </div>
             <div style="display:flex;gap:8px">
-              <button class="btn neon-btn-outline" onclick="editPositionModal('${p.id}')" title="Edit">
-                <i class="fas fa-edit"></i>
+              <button class="btn neon-btn-outline" onclick="editPositionModal('${p.id}')" title="${editLocked ? 'Editing locked' : 'Edit'}" style="${lockStyle}" ${editLocked ? 'disabled' : ''}>
+                <i class="fas fa-edit"></i>${editLocked ? lockChip : ''}
               </button>
-              <button class="btn btn-danger" onclick="deletePositionConfirm('${p.id}', '${escapeHtml(p.name)}')" title="Delete">
-                <i class="fas fa-trash"></i>
+              <button class="btn btn-danger" onclick="deletePositionConfirm('${p.id}', '${escapeHtml(p.name)}')" title="${editLocked ? 'Editing locked' : 'Delete'}" style="${lockStyle}" ${editLocked ? 'disabled' : ''}>
+                <i class="fas fa-trash"></i>${editLocked ? lockChip : ''}
               </button>
             </div>
           </div>

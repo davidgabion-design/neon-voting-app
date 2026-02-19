@@ -4,42 +4,49 @@
       <div class="super-login-header">
         <div>
           <h2 class="super-login-title">
-            <i class="fas fa-crown"></i> Super Admin Login
+            <i class="fas fa-crown"></i> <span data-i18n="super_admin_login">Super Admin Login</span>
           </h2>
-          <p class="super-login-sub">Owner access to manage organizations and approve elections</p>
+          <p class="super-login-sub" data-i18n="super_admin_subtitle">Owner access to manage organizations and approve elections</p>
         </div>
-        <button class="super-login-back" onclick="showScreen('gatewayScreen')">
-          <i class="fas fa-arrow-left"></i> Back
-        </button>
+        <div style="display:flex;gap:8px;align-items:center">
+          <select id="superAdminLangSelect" class="input" style="max-width:110px;padding:6px 10px;font-size:13px" title="Change Language">
+            <option value="ENG">🇬🇧 ENG</option>
+            <option value="SPA">🇪🇸 SPA</option>
+            <option value="FRE">🇫🇷 FRE</option>
+            <option value="POR">🇵🇹 POR</option>
+            <option value="TWI">🇬🇭 TWI</option>
+          </select>
+          <button class="super-login-back" onclick="showScreen('gatewayScreen')">
+            <i class="fas fa-arrow-left"></i> <span data-i18n="back">Back</span>
+          </button>
+        </div>
       </div>
 
       <div class="super-login-body">
-        <label class="super-login-label">Super Admin Password</label>
+        <label class="super-login-label" data-i18n="super_admin_password">Super Admin Password</label>
         <input 
           id="super-admin-pass" 
           type="password" 
           class="super-login-input" 
           placeholder="Enter super admin password"
+          data-i18n-placeholder="super_admin_password_placeholder"
           autocomplete="off"
         />
 
         <div id="super-admin-error" class="password-error">
           <i class="fas fa-exclamation-circle"></i>
-          <span id="super-admin-error-text">Invalid password. Please try again.</span>
+          <span id="super-admin-error-text" data-i18n="invalid_password_error">Invalid password. Please try again.</span>
         </div>
 
         <button id="super-login-btn" class="super-login-btn" onclick="loginSuperAdmin()">
           <i class="fas fa-sign-in-alt"></i>
-          Login
+          <span data-i18n="login">Login</span>
         </button>
+      </div>
 
-        <div class="setup-instructions">
-          <h4><i class="fas fa-database"></i> Firestore Setup</h4>
-          <div class="subtext">
-            <strong>Default Password:</strong> <code>admin123</code><br>
-            <strong>Real-time Sync:</strong> <span class="badge success">Active</span><br>
-            <small>All organization data syncs instantly with global dashboard.</small>
-          </div>
+      <div class="login-footer" style="text-align:center;padding:12px;border-top:1px solid rgba(255,255,255,0.1);margin-top:10px">
+        <div id="superAdminLoginDateTime" class="subtext" style="font-size:12px;color:rgba(255,255,255,0.6)">
+          <i class="fas fa-clock"></i> <span id="superAdminLoginDateTimeText"></span>
         </div>
       </div>
     </div>

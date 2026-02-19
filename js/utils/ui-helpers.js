@@ -92,6 +92,11 @@ export function showScreen(screenId) {
     screen.classList.add('active');
     window.scrollTo({ top: 0, behavior: 'smooth' });
     
+    // Update date/time display if present
+    if (typeof window.updateLoginDateTime === 'function') {
+      window.updateLoginDateTime();
+    }
+    
     // Screen-specific initialization
     if (screenId === 'votingScreen' && window.currentOrgData) {
       if (typeof window.startVoterCountdown === 'function') {

@@ -1,4 +1,5 @@
 const nodemailer = require("nodemailer");
+const { getSmtpConfig } = require("./_shared/env");
 
 exports.handler = async (event) => {
   if (event.httpMethod !== "POST") {
@@ -25,22 +26,32 @@ exports.handler = async (event) => {
     };
   }
 
-  const smtpUser = process.env.SMTP_USER || process.env.EMAIL_USER;
-  const smtpPass = process.env.SMTP_PASS || process.env.EMAIL_PASS;
-  const smtpFrom = process.env.SMTP_FROM || smtpUser;
+  let smtp;
+  try {
+    smtp = getSmtpConfig();
+  } catch (envErr) {
+    return {
+      statusCode: 500,
+      headers: {
+        "Access-Control-Allow-Origin": "*",
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ ok: false, error: envErr.message })
+    };
+  }
 
   const transporter = nodemailer.createTransport({
-    host: process.env.SMTP_HOST,
-    port: Number(process.env.SMTP_PORT),
+    host: smtp.host,
+    port: smtp.port,
     secure: false,
     auth: {
-      user: smtpUser,
-      pass: smtpPass
+      user: smtp.user,
+      pass: smtp.pass
     }
   });
 
   const info = await transporter.sendMail({
-    from: `"Neon Voting System" <${smtpFrom}>`,
+    from: `"Neon Voting System" <${smtp.from}>`,
     to,
     subject,
     text,

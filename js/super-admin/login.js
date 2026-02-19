@@ -6,10 +6,8 @@
 import { db } from '../config/firebase.js';
 import { doc, getDoc, setDoc, serverTimestamp } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js';
 import { showToast, showScreen } from '../utils/ui-helpers.js';
-import { saveSession } from '../utils/session.js';
+import { updateSession } from '../utils/session.js';
 import { showSuperTab } from './dashboard.js';
-
-let session = {};
 
 /**
  * SuperAdmin login handler
@@ -33,26 +31,22 @@ export async function loginSuperAdmin() {
     const snap = await getDoc(ref);
     
     if (!snap.exists()) {
-      const defaultPass = "admin123";
-      await setDoc(ref, { password: defaultPass });
-      if (pass === defaultPass) {
-        session.role = 'superAdmin'; 
-        saveSession();
-        showScreen("superAdminPanel");
-        // Auto-load dashboard tab on login
-        setTimeout(() => showSuperTab('dashboard'), 100);
-        document.getElementById("super-admin-pass").value = "";
-        showToast("SuperAdmin created & logged in", "success");
-        return;
-      } else {
-        showToast("Wrong password. Try admin123 for first-time", "error"); 
-        return;
-      }
+      showToast("SuperAdmin not initialized. Contact administrator.", "error");
+      return;
     } else {
       const cfg = snap.data();
       if (cfg.password === pass) {
-        session.role = 'superAdmin'; 
-        saveSession();
+        updateSession({ role: 'superAdmin' });
+        
+        // Set global SuperAdmin object for permission checks
+        window.currentSuperAdmin = {
+          role: 'super_admin',
+          permissions: ['*'],  // Full access
+          userId: 'superadmin',
+          loginTime: new Date().toISOString()
+        };
+        window.currentAdmin = window.currentSuperAdmin;  // Alias for admin-guard.js
+        
         showScreen("superAdminPanel");
         // Auto-load dashboard tab on login
         setTimeout(() => showSuperTab('dashboard'), 100);
@@ -93,9 +87,20 @@ export async function restoreSuperAdminSession() {
         return false;
       }
       
+      // Set global SuperAdmin object for permission checks
+      window.currentSuperAdmin = {
+        role: 'super_admin',
+        permissions: ['*'],  // Full access
+        userId: 'superadmin',
+        loginTime: new Date().toISOString()
+      };
+      window.currentAdmin = window.currentSuperAdmin;  // Alias for admin-guard.js
+      
       // Restore SuperAdmin panel
       showScreen("superAdminPanel");
-      loadSuperOrganizationsEnhanced();
+      
+      // Auto-load dashboard tab
+      setTimeout(() => showSuperTab('dashboard'), 100);
       
       return true;
     }

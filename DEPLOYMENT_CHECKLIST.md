@@ -76,7 +76,7 @@ Required for `send-invite-sms.js` Netlify function:
 # Twilio Credentials
 TWILIO_ACCOUNT_SID=ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 TWILIO_AUTH_TOKEN=your-auth-token-here
-TWILIO_PHONE_NUMBER=+1234567890  # Your Twilio number
+TWILIO_SENDER_E164=+1234567890  # Your Twilio sender number (E.164)
 ```
 
 **Get credentials from:**

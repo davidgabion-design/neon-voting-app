@@ -1,12 +1,25 @@
+<script>
+// Redirect old voter login links to main app with deep-link params
+(function() {
+  if (window.location.pathname.includes('/html/voter/login.html')) {
+    const params = new URLSearchParams(window.location.search);
+    const org = params.get('org');
+    if (org) {
+      const baseUrl = window.location.origin;
+      window.location.replace(`${baseUrl}?role=voter&org=${encodeURIComponent(org)}`);
+    }
+  }
+})();
+</script>
 <section id="voterLoginScreen" class="screen">
   <div class="login-container">
     <div class="login-card">
       <div class="login-header">
         <div>
           <h2 class="login-title">
-            <i class="fas fa-person-booth"></i> Voter Login
+            <i class="fas fa-person-booth"></i> <span data-i18n="voter_login">Voter Login</span>
           </h2>
-          <p class="login-subtitle">Cast your vote securely and anonymously</p>
+          <p class="login-subtitle" data-i18n="voter_login_subtitle">Cast your vote securely and anonymously</p>
         </div>
         <div style="display:flex;gap:8px;align-items:center">
           <select id="voterLoginLangSelect" class="input" style="max-width:110px;padding:6px 10px;font-size:13px" title="Change Language">
@@ -17,7 +30,7 @@
             <option value="TWI">🇬🇭 TWI</option>
           </select>
           <button id="voter-back" class="btn-back">
-            <i class="fas fa-arrow-left"></i> Back
+            <i class="fas fa-arrow-left"></i> <span data-i18n="back">Back</span>
           </button>
         </div>
       </div>
@@ -25,17 +38,17 @@
       <div class="login-body">
         <div class="form-grid">
           <div class="form-group">
-            <label for="voterOrgIdInput">Organization ID</label>
-            <input id="voterOrgIdInput" type="text" placeholder="e.g. ORG-12345" autocomplete="off" />
+            <label for="voterOrgIdInput" data-i18n="organization_id">Organization ID</label>
+            <input id="voterOrgIdInput" type="text" placeholder="e.g. ORG-12345" data-i18n-placeholder="org_id_placeholder" autocomplete="off" />
           </div>
 
           <div class="form-group">
-            <label for="voterCredentialInput">Email or Phone Number</label>
-            <input id="voterCredentialInput" type="text" placeholder="email@example.com or +233..." autocomplete="off" />
+            <label for="voterCredentialInput" data-i18n="email_or_phone">Email or Phone Number</label>
+            <input id="voterCredentialInput" type="text" placeholder="email@example.com or +233..." data-i18n-placeholder="email_phone_placeholder" autocomplete="off" />
           </div>
 
           <button id="voterLoginBtn" class="btn btn-block neon-btn" type="button">
-            <i class="fas fa-right-to-bracket"></i> Continue to Vote
+            <i class="fas fa-right-to-bracket"></i> <span data-i18n="continue_to_vote">Continue to Vote</span>
           </button>
 
           <div id="voterLoginError" class="error-text"></div>
@@ -44,15 +57,21 @@
         <div class="info-banner">
           <i class="fas fa-shield-check"></i>
           <div>
-            <strong>Secure & Anonymous</strong>
-            <div class="subtext">Your vote is encrypted and cannot be traced back to you</div>
+            <strong data-i18n="secure_anonymous">Secure & Anonymous</strong>
+            <div class="subtext" data-i18n="vote_encrypted_desc">Your vote is encrypted and cannot be traced back to you</div>
           </div>
         </div>
 
         <div style="margin-top:14px;text-align:center">
-          <a href="#" onclick="showScreen('guidanceVoterScreen')" class="subtext">
+          <a href="#" onclick="showScreen('guidanceVoterScreen')" class="subtext" data-i18n="how_voting_works_link">
             How voting works & what to expect
           </a>
+        </div>
+      </div>
+
+      <div class="login-footer" style="text-align:center;padding:12px;border-top:1px solid rgba(255,255,255,0.1);margin-top:10px">
+        <div id="voterLoginDateTime" class="subtext" style="font-size:12px;color:rgba(255,255,255,0.6)">
+          <i class="fas fa-clock"></i> <span id="voterLoginDateTimeText"></span>
         </div>
       </div>
     </div>

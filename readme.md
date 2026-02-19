@@ -22,9 +22,7 @@ netlify env:set SMTP_FROM noreply@yourdomain.com
 
 netlify env:set TWILIO_ACCOUNT_SID your-sid
 netlify env:set TWILIO_AUTH_TOKEN your-token
-netlify env:set TWILIO_SMS_FROM +1XXXXXXXXXX
-
-netlify env:set TWILIO_WHATSAPP_FROM whatsapp:+1XXXXXXXXXX
+netlify env:set TWILIO_SENDER_E164 +1XXXXXXXXXX
 netlify env:set APP_URL https://your-app-name.netlify.app
 ```
 
@@ -38,6 +36,8 @@ netlify dev
 
 This serves the static site and runs serverless functions at `/.netlify/functions/*`. Use the EC dashboard to send invites (email/SMS) and verify provider responses.
 
+Quick env check (after deploy): `./test-env-doctor.ps1 -SiteUrl https://your-site.netlify.app`
+
 ## Firebase Configuration
 
 - Edit [firebase-config.js](firebase-config.js) with your project values; `script.js` will prefer `window.firebaseConfig` if present.
@@ -49,6 +49,7 @@ This serves the static site and runs serverless functions at `/.netlify/function
 - SMS: [netlify/functions/send-invite-sms.js](netlify/functions/send-invite-sms.js), [netlify/functions/send-sms.js](netlify/functions/send-sms.js)
 - WhatsApp: [netlify/functions/send-whatsapp.js](netlify/functions/send-whatsapp.js)
 - Runtime check: [netlify/functions/test-runtime.js](netlify/functions/test-runtime.js)
+- Env doctor: [netlify/functions/env-doctor.js](netlify/functions/env-doctor.js) (optional hardening via `ENV_DOCTOR_TOKEN`)
 
 ## Triggering Invites
 

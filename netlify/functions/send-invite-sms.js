@@ -1,4 +1,9 @@
 const twilio = require('twilio');
+const {
+  getTwilioAuth,
+  getTwilioFromSms,
+  normalizeE164
+} = require('./_shared/env');
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -30,26 +35,19 @@ exports.handler = async (event) => {
   }
 
   try {
-    const accountSid = process.env.TWILIO_ACCOUNT_SID;
-    const authToken = process.env.TWILIO_AUTH_TOKEN;
-    const fromNumber = process.env.TWILIO_SMS_FROM || process.env.TWILIO_PHONE_NUMBER;
-
-    if (!accountSid || !authToken || !fromNumber) {
+    let accountSid;
+    let authToken;
+    let fromNumber;
+    let toE164;
+    try {
+      ({ accountSid, authToken } = getTwilioAuth());
+      fromNumber = getTwilioFromSms();
+      toE164 = normalizeE164(phone, { fieldName: 'phone', allowWhatsappPrefix: false });
+    } catch (envErr) {
       return {
         statusCode: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ok: false,
-          error: "Missing Twilio configuration (TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_SMS_FROM/TWILIO_PHONE_NUMBER)"
-        })
-      };
-    }
-
-    if (!accountSid.startsWith('AC')) {
-      return {
-        statusCode: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        body: JSON.stringify({ ok: false, error: "Invalid TWILIO_ACCOUNT_SID (must start with AC)" })
+        body: JSON.stringify({ ok: false, error: envErr.message })
       };
     }
 
@@ -58,7 +56,7 @@ exports.handler = async (event) => {
     const smsMessage = await client.messages.create({
       body: message,
       from: fromNumber,
-      to: phone
+      to: toE164
     });
 
     console.log("SMS sent - Twilio response:", {
@@ -80,7 +78,7 @@ exports.handler = async (event) => {
         status: smsMessage.status,
         recipientType,
         details: {
-          to: phone,
+          to: toE164,
           from: fromNumber,
           twilioStatus: smsMessage.status
         }

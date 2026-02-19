@@ -26,7 +26,10 @@ service cloud.firestore {
     // Meta collection for super admin credentials
     match /meta/{docId} {
       allow read: if true;  // Allow Super Admin login check
-      allow write: if true; // Allow Super Admin creation (in production, restrict this)
+      // Only allow creating meta doc if it doesn't exist (initial setup)
+      allow create: if !exists(/databases/$(database)/documents/meta/$(docId));
+      // Prevent updates/deletes to protect super admin credentials
+      allow update, delete: if false;
     }
     
     // Guidance analytics collection at meta/analytics/guidance_views
@@ -75,24 +78,45 @@ service cloud.firestore {
       match /voters/{voterId} {
         allow read: if true; // Public read for voter login
         
-        // EC can write only if organization editing is allowed
-        allow write: if isApprovalEditable(get(/databases/$(database)/documents/organizations/$(orgId)).data);
+        // EC can write only if organization editing is allowed - validate structure
+        allow create: if isApprovalEditable(get(/databases/$(database)/documents/organizations/$(orgId)).data)
+                      && request.resource.data.keys().hasAny(['email', 'phone'])
+                      && request.resource.data.hasVoted == false;
+        
+        // Only allow hasVoted flag update (after voting)
+        allow update: if request.resource.data.diff(resource.data).affectedKeys().hasOnly(['hasVoted'])
+                      || isApprovalEditable(get(/databases/$(database)/documents/organizations/$(orgId)).data);
+        
+        allow delete: if isApprovalEditable(get(/databases/$(database)/documents/organizations/$(orgId)).data);
       }
 
       // ✅ Positions subcollection - locked when approval is pending/approved
       match /positions/{positionId} {
         allow read: if true; // Public read for ballot display
         
-        // EC can write only if organization editing is allowed
-        allow write: if isApprovalEditable(get(/databases/$(database)/documents/organizations/$(orgId)).data);
+        // EC can write only if organization editing is allowed - validate structure
+        allow create: if isApprovalEditable(get(/databases/$(database)/documents/organizations/$(orgId)).data)
+                      && request.resource.data.keys().hasAll(['name'])
+                      && request.resource.data.name is string;
+        
+        allow update: if isApprovalEditable(get(/databases/$(database)/documents/organizations/$(orgId)).data);
+        
+        allow delete: if isApprovalEditable(get(/databases/$(database)/documents/organizations/$(orgId)).data);
       }
 
       // ✅ Candidates subcollection - locked when approval is pending/approved
       match /candidates/{candidateId} {
         allow read: if true; // Public read for ballot display
         
-        // EC can write only if organization editing is allowed
-        allow write: if isApprovalEditable(get(/databases/$(database)/documents/organizations/$(orgId)).data);
+        // EC can write only if organization editing is allowed - validate structure
+        allow create: if isApprovalEditable(get(/databases/$(database)/documents/organizations/$(orgId)).data)
+                      && request.resource.data.keys().hasAll(['name', 'positionId'])
+                      && request.resource.data.name is string
+                      && request.resource.data.positionId is string;
+        
+        allow update: if isApprovalEditable(get(/databases/$(database)/documents/organizations/$(orgId)).data);
+        
+        allow delete: if isApprovalEditable(get(/databases/$(database)/documents/organizations/$(orgId)).data);
       }
 
       // ✅ Votes collection - always writable for voters, read restricted
@@ -100,8 +124,11 @@ service cloud.firestore {
         // Voters can read their own votes (by voterId)
         allow read: if true;
         
-        // Voters can create votes (one-time voting)
-        allow create: if true;
+        // Voters can create votes (one-time voting) - validate structure
+        allow create: if request.resource.data.keys().hasAll(['voterId', 'choices', 'timestamp'])
+                      && request.resource.data.voterId is string
+                      && request.resource.data.choices is map
+                      && request.resource.data.timestamp != null;
         
         // Update/delete restricted (prevent vote tampering)
         allow update, delete: if false;
@@ -111,8 +138,12 @@ service cloud.firestore {
       match /invites/{inviteId} {
         allow read: if true; // EC can view invite status
         
-        // EC can always send invites (even after approval) - it's just tracking/logging
-        allow create, update: if true;
+        // EC can always send invites (even after approval) - validate structure
+        // Note: serverTimestamp() evaluates as null during validation, but becomes timestamp on server
+        allow create: if request.resource.data.keys().hasAny(['recipientEmail', 'recipientPhone']);
+        
+        // Allow status updates
+        allow update: if request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'deliveredAt', 'errorMessage']);
         
         allow delete: if false; // Preserve invite history
       }
@@ -149,16 +180,21 @@ service cloud.firestore {
     // ✅ Administrators collection - manage admin users with roles
     match /administrators/{adminEmail} {
       // Allow read for super admin login and admin management UI
-      allow read: if true;  // In production: restrict to authenticated super admins
+      allow read: if true;
       
-      // Allow create for adding new administrators
-      allow create: if true; // In production: restrict to super admins with create_admins permission
+      // Validate admin document structure on create
+      allow create: if request.resource.data.keys().hasAll(['email', 'role', 'createdAt'])
+                    && request.resource.data.email is string
+                    && request.resource.data.role in ['superadmin', 'admin', 'ec']
+                    && request.resource.data.createdAt != null;
       
-      // Allow update for editing admin profiles and permissions
-      allow update: if true; // In production: restrict to super admins with edit_admins permission
+      // Prevent role elevation or critical field tampering on update
+      allow update: if !request.resource.data.diff(resource.data).affectedKeys().hasAny(['email', 'createdAt'])
+                    && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['role']) 
+                        || request.resource.data.role in ['admin', 'ec']);
       
-      // Allow delete for removing administrators
-      allow delete: if true; // In production: restrict to super admins with delete_admins permission
+      // Allow delete (consider adding protection for last superadmin)
+      allow delete: if true;
     }
   }
 }

@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test WhatsApp Function</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #1a1a2e;
+            color: #eee;
+        }
+        .container {
+            background: #16213e;
+            padding: 30px;
+            border-radius: 10px;
+        }
+        h1 { color: #00d9ff; margin-bottom: 20px; }
+        label { display: block; margin-top: 15px; font-weight: bold; }
+        input, select, textarea {
+            width: 100%;
+            padding: 12px;
+            margin-top: 5px;
+            border-radius: 5px;
+            border: 1px solid #0f3460;
+            background: #0f3460;
+            color: #eee;
+            font-size: 14px;
+        }
+        button {
+            width: 100%;
+            padding: 15px;
+            margin-top: 20px;
+            border-radius: 5px;
+            border: none;
+            background: #25D366;
+            color: #000;
+            font-weight: bold;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        button:hover { background: #128C7E; }
+        button:disabled { background: #555; cursor: not-allowed; }
+        #result {
+            margin-top: 20px;
+            padding: 15px;
+            background: #0f3460;
+            border-radius: 5px;
+            white-space: pre-wrap;
+            font-family: monospace;
+            font-size: 13px;
+        }
+        .success { color: #51cf66; }
+        .error { color: #ff6b6b; }
+        .info { color: #ffd43b; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>WhatsApp Test</h1>
+        
+        <label>Template Type</label>
+        <select id="type">
+            <option value="invite">invite (Voter Invite)</option>
+            <option value="otp">otp (One-Time Password)</option>
+            <option value="ec">ec (EC Access)</option>
+            <option value="results">results (Results Published)</option>
+            <option value="approved">approved (Election Approved)</option>
+        </select>
+        
+        <label>Phone Number (E.164)</label>
+        <input type="text" id="phone" placeholder="+233247654381" value="+233247654381">
+        
+        <label>Variable 1 (Name / EC Name)</label>
+        <input type="text" id="var1" placeholder="John Doe" value="John Doe">
+        
+        <label>Variable 2 (Link / OTP Code)</label>
+        <input type="text" id="var2" placeholder="https://vote.app/login?org=test123" value="https://neonvotingsystem.netlify.app/?org=test123">
+        
+        <label>Organization ID</label>
+        <input type="text" id="orgId" placeholder="test-org-123" value="test-org-123">
+        
+        <button id="sendBtn" onclick="sendWhatsApp()">Send WhatsApp</button>
+        
+        <div id="result"></div>
+    </div>
+
+    <script>
+        async function sendWhatsApp() {
+            const btn = document.getElementById('sendBtn');
+            const resultDiv = document.getElementById('result');
+            
+            const type = document.getElementById('type').value;
+            const phone = document.getElementById('phone').value.trim();
+            const var1 = document.getElementById('var1').value.trim();
+            const var2 = document.getElementById('var2').value.trim();
+            const orgId = document.getElementById('orgId').value.trim();
+            
+            if (!phone) {
+                resultDiv.innerHTML = '<span class="error">Phone number required</span>';
+                return;
+            }
+            
+            btn.disabled = true;
+            btn.textContent = 'Sending...';
+            resultDiv.innerHTML = '<span class="info">Sending WhatsApp message...</span>';
+            
+            const payload = {
+                type,
+                phone,
+                data: { "1": var1, "2": var2 },
+                orgId
+            };
+            
+            try {
+                const response = await fetch('/.netlify/functions/send-whatsapp', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    resultDiv.innerHTML = `<span class="success">SUCCESS</span>\n\n` +
+                        `SID: ${data.sid}\n` +
+                        `Status: ${data.status}\n` +
+                        `Type: ${data.type}\n` +
+                        `Timestamp: ${data.timestamp}\n\n` +
+                        `<span class="info">Check delivery status using the SID above</span>`;
+                } else {
+                    resultDiv.innerHTML = `<span class="error">FAILED</span>\n\n` +
+                        `Error: ${data.error}\n` +
+                        (data.code ? `Code: ${data.code}\n` : '') +
+                        (data.details ? `Details: ${data.details}` : '');
+                }
+            } catch (err) {
+                resultDiv.innerHTML = `<span class="error">Request failed</span>\n\n${err.message}`;
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Send WhatsApp';
+            }
+        }
+    </script>
+</body>
+</html>

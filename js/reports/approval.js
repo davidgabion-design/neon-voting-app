@@ -6,10 +6,12 @@ import {
   doc, 
   getDoc, 
   updateDoc,
-  serverTimestamp 
+  serverTimestamp,
+  arrayUnion 
 } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js';
 import { showQuickLoading, showToast, renderError } from '../utils/ui-helpers.js';
 import { logActivity, logAudit } from '../utils/activity.js';
+import { computeElectionSnapshotHash, hasElectionChanged } from '../utils/election-hash.js';
 
 /**
  * ✅ Validate all election requirements
@@ -88,7 +90,7 @@ export async function loadECApproval() {
     
     const activeVoters = votersSnap.docs.filter(doc => {
       const data = doc.data();
-      return !data.isReplaced && !data.isActive === false;
+      return !data.isReplaced && data.isActive !== false;
     });
     
     const positions = positionsSnap.docs;
@@ -119,8 +121,9 @@ export async function loadECApproval() {
     
     // Get current approval status
     const approvalStatus = org.approval?.status || 'not_submitted';
-    const submittedDate = org.approval?.requestedAt 
-      ? (org.approval.requestedAt.toDate ? org.approval.requestedAt.toDate() : (org.approval.requestedAt.seconds ? new Date(org.approval.requestedAt.seconds * 1000) : new Date(org.approval.requestedAt)))
+    // Only show submitted date if actually submitted (not draft or not_submitted)
+    const submittedDate = (approvalStatus !== 'not_submitted' && approvalStatus !== 'draft' && org.approval?.submittedAt) 
+      ? (org.approval.submittedAt.toDate ? org.approval.submittedAt.toDate() : (org.approval.submittedAt.seconds ? new Date(org.approval.submittedAt.seconds * 1000) : new Date(org.approval.submittedAt)))
       : null;
     const reviewedBy = org.approval?.reviewedBy || null;
     const approvalComments = org.approval?.comments || null;
@@ -159,7 +162,7 @@ export async function loadECApproval() {
               ${submittedDate ? `
                 <div>
                   <div class="label">Submitted</div>
-                  <div id="submittedDate">${submittedDate.toLocaleDateString()}</div>
+                  <div id="submittedDate">${submittedDate.toLocaleString()}</div>
                 </div>
               ` : ''}
               ${reviewedBy ? `
@@ -297,8 +300,8 @@ export async function loadECApproval() {
     // Check if all requirements are met
     const allRequirementsMet = hasVoters && hasPositions && allPositionsHaveCandidates && hasSchedule;
     
-    // Add submission button
-    if (approvalStatus === 'not_submitted') {
+    // Add submission button (show for 'not_submitted' OR 'draft' status)
+    if (approvalStatus === 'not_submitted' || approvalStatus === 'draft') {
       const remainingCount = 4 - (hasVoters + hasPositions + allPositionsHaveCandidates + hasSchedule);
       html += `
         <div class="card" style="text-align:center;">
@@ -418,6 +421,22 @@ export async function submitForApprovalFinal() {
   }
   
   try {
+    // ✅ Compute election snapshot hash
+    const snapshotHash = await computeElectionSnapshotHash(window.currentOrgId);
+    
+    // ✅ Get existing history or create new
+    const existingApproval = window.currentOrgData.approval || {};
+    const existingHistory = existingApproval.history || [];
+    
+    // ✅ Create history entry
+    const historyEntry = {
+      timestamp: new Date().toISOString(),
+      action: 'submitted',
+      status: 'pending',
+      snapshotHash: snapshotHash,
+      submittedBy: 'EC'
+    };
+    
     // ✅ PATCH 1: Set status to 'locked' to prevent editing during review
     await updateDoc(doc(db, "organizations", window.currentOrgId), {
       electionStatus: 'locked',
@@ -428,7 +447,9 @@ export async function submitForApprovalFinal() {
         submittedBy: "EC",
         submittedAt: serverTimestamp(),
         organizationName: window.currentOrgData.name || window.currentOrgId,
-        comment: ""
+        lastSnapshotHash: snapshotHash,
+        comment: "",
+        history: arrayUnion(historyEntry)
       },
       updatedAt: serverTimestamp()
     });
@@ -472,9 +493,35 @@ export async function resubmitForApproval() {
     return;
   }
   
+  // ✅ Check if election has changed since last submission
+  const lastHash = window.currentOrgData.approval?.lastSnapshotHash;
+  const changed = await hasElectionChanged(window.currentOrgId, lastHash);
+  
+  if (!changed && lastHash) {
+    showToast("No changes detected. Please make changes before resubmitting.", "warning");
+    return;
+  }
+  
   if (!confirm("Resubmit this election for SuperAdmin approval?")) return;
   
   try {
+    // ✅ Compute new election snapshot hash
+    const snapshotHash = await computeElectionSnapshotHash(window.currentOrgId);
+    
+    // ✅ Get existing history
+    const existingApproval = window.currentOrgData.approval || {};
+    const existingHistory = existingApproval.history || [];
+    
+    // ✅ Create history entry for resubmission
+    const historyEntry = {
+      timestamp: new Date().toISOString(),
+      action: 'resubmitted',
+      status: 'pending',
+      snapshotHash: snapshotHash,
+      submittedBy: 'EC',
+      previousStatus: currentStatus
+    };
+    
     await updateDoc(doc(db, "organizations", window.currentOrgId), {
       electionStatus: 'locked',
       approval: {
@@ -484,9 +531,11 @@ export async function resubmitForApproval() {
         submittedBy: "EC",
         submittedAt: serverTimestamp(),
         organizationName: window.currentOrgData.name || window.currentOrgId,
+        lastSnapshotHash: snapshotHash,
         resubmitted: true,
         previousStatus: currentStatus,
-        comment: ""
+        comment: "",
+        history: arrayUnion(historyEntry)
       },
       updatedAt: serverTimestamp()
     });

@@ -1,4 +1,9 @@
 const twilio = require("twilio");
+const {
+  getTwilioAuth,
+  getTwilioFromSms,
+  normalizeE164
+} = require("./_shared/env");
 
 exports.handler = async (event) => {
   if (event.httpMethod !== "POST") {
@@ -40,32 +45,31 @@ exports.handler = async (event) => {
     };
   }
 
-  const {
-    TWILIO_ACCOUNT_SID,
-    TWILIO_AUTH_TOKEN,
-    TWILIO_SMS_FROM
-  } = process.env;
-
-  if (!TWILIO_ACCOUNT_SID || !TWILIO_AUTH_TOKEN || !TWILIO_SMS_FROM) {
+  let accountSid;
+  let authToken;
+  let fromE164;
+  let toE164;
+  try {
+    ({ accountSid, authToken } = getTwilioAuth());
+    fromE164 = getTwilioFromSms();
+    toE164 = normalizeE164(to, { fieldName: "to", allowWhatsappPrefix: false });
+  } catch (envErr) {
     return {
       statusCode: 500,
       headers: {
         "Access-Control-Allow-Origin": "*",
         "Content-Type": "application/json"
       },
-      body: JSON.stringify({
-        ok: false,
-        error: "Missing Twilio SMS env vars"
-      })
+      body: JSON.stringify({ ok: false, error: envErr.message })
     };
   }
 
-  const client = twilio(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN);
+  const client = twilio(accountSid, authToken);
 
   try {
     const msg = await client.messages.create({
-      from: TWILIO_SMS_FROM, // e.g. +1XXXXXXXXXX
-      to,
+      from: fromE164,
+      to: toE164,
       body: messageText
     });
 

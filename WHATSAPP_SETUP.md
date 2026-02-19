@@ -13,7 +13,7 @@ The error `"Twilio could not find a Channel with the specified From address"` me
 
    ```bash
    # In your terminal (or add to .env file):
-   netlify env:set TWILIO_WHATSAPP_FROM "whatsapp:+14155238886"
+   netlify env:set TWILIO_SENDER_E164 "+14155238886"
    ```
 
 5. **Restart Netlify Dev**:
@@ -34,7 +34,7 @@ For production use with custom numbers:
 1. Apply for WhatsApp Business API access in Twilio
 2. Submit your business for approval
 3. Get your approved "From" number
-4. Set it: `netlify env:set TWILIO_WHATSAPP_FROM "whatsapp:+233XXXXXXXXX"`
+4. Set it: `netlify env:set TWILIO_SENDER_E164 "+233XXXXXXXXX"`
 
 ## Current Environment Variables Needed
 
@@ -47,12 +47,12 @@ netlify env:list
 **Required for WhatsApp:**
 - `TWILIO_ACCOUNT_SID` - Your Twilio Account SID
 - `TWILIO_AUTH_TOKEN` - Your Twilio Auth Token
-- `TWILIO_WHATSAPP_FROM` - Your WhatsApp-enabled number (format: `whatsapp:+14155238886`)
+- `TWILIO_SENDER_E164` - Sender number (E.164 format: `+14155238886`)
 
 **Required for SMS:**
 - `TWILIO_ACCOUNT_SID`
 - `TWILIO_AUTH_TOKEN`
-- `TWILIO_SMS_FROM` - Your SMS phone number (format: `+15017122661`)
+- `TWILIO_SENDER_E164` - Sender number (E.164 format: `+15017122661`)
 
 **Required for Email:**
 - `SMTP_HOST` - Your SMTP server
@@ -68,12 +68,9 @@ Once configured, test with:
 2. Make sure you've joined the sandbox (if using sandbox)
 3. Check phone number format is correct (+233...)
 
-## Phone Number Formats Supported
+## Phone Number Format
 
-The app automatically handles these formats:
-- `+233247654381` ✅ (E.164 format - preferred)
-- `0247654381` ✅ (Local Ghana format - auto-converts)
-- `233247654381` ✅ (Country code without +)
-- `+233 24 765 4381` ✅ (Spaces removed automatically)
-
-All formats are converted to E.164 before sending to Twilio.
+All Twilio phone numbers must be provided in strict E.164 format:
+- `+233247654381` ✅
+- `0247654381` ❌
+- `233247654381` ❌

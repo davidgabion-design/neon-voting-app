@@ -13,8 +13,7 @@ Check that EACH variable has the right scope:
 ```
 TWILIO_ACCOUNT_SID → Production ✓
 TWILIO_AUTH_TOKEN → Production ✓
-TWILIO_SMS_FROM → Production ✓
-TWILIO_WHATSAPP_FROM → Production ✓
+TWILIO_SENDER_E164 → Production ✓
 SMTP_HOST → Production ✓
 SMTP_PORT → Production ✓
 SMTP_USER → Production ✓

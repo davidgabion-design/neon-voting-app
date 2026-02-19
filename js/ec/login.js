@@ -7,6 +7,7 @@ import { db } from '../config/firebase.js';
 import { doc, getDoc, onSnapshot } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js';
 import { showScreen, showToast } from '../utils/ui-helpers.js';
 import { saveSession, getSession } from '../utils/session.js';
+import { setCurrentOrgId, setCurrentOrgData } from '../state/app-state.js';
 
 /**
  * Show EC OTP input and handle validation
@@ -73,8 +74,13 @@ window.validateECOTP = async function(orgId) {
     const session = getSession();
     session.role = 'ec'; 
     session.orgId = orgId; 
-    window.currentOrgId = orgId;
-    window.currentOrgData = orgData;
+    
+    // Set org state properly for alerts and other features
+    setCurrentOrgId(orgId);
+    setCurrentOrgData(orgData);
+    window.currentOrgId = orgId; // Keep for backward compatibility
+    window.currentOrgData = orgData; // Keep for backward compatibility
+    
     window.signatureState = window.signatureState || { ec:null, superAdmin:null };
     window.signatureState.ec = { 
       name: orgData.ecName || 'Election Commissioner', 
@@ -212,7 +218,9 @@ export async function loginEC() {
  * Open EC panel and set up real-time listener
  */
 export async function openECPanel(orgId) {
-  window.currentOrgId = orgId;
+  // Set org state properly for alerts and other features
+  setCurrentOrgId(orgId);
+  window.currentOrgId = orgId; // Keep for backward compatibility
   
   if (window.currentOrgUnsub) {
     window.currentOrgUnsub();
@@ -229,7 +237,9 @@ export async function openECPanel(orgId) {
       return;
     }
     
-    window.currentOrgData = { id: window.currentOrgId, ...snap.data() };
+    const orgData = { id: orgId, ...snap.data() };
+    setCurrentOrgData(orgData);
+    window.currentOrgData = orgData; // Keep for backward compatibility
     
     // ✅ PATCH: Validate election type is configured
     if (!window.currentOrgData.electionType) {
@@ -258,7 +268,9 @@ export async function openECPanel(orgId) {
     
     window.currentOrgUnsub = onSnapshot(ref, (snap) => {
       if (snap.exists()) {
-        window.currentOrgData = { id: window.currentOrgId, ...snap.data() };
+        const updatedOrgData = { id: window.currentOrgId, ...snap.data() };
+        setCurrentOrgData(updatedOrgData);
+        window.currentOrgData = updatedOrgData; // Keep for backward compatibility
         updateECUI();
         
         // ✅ PATCH 3: Update approval banner on real-time changes
@@ -387,8 +399,34 @@ if (typeof window !== 'undefined') {
   
   // Auto-fill org ID from invite link
   window.addEventListener('load', () => {
+    // Check URL parameters first
+    const urlParams = new URLSearchParams(window.location.search);
+    const orgIdParam = urlParams.get('org');
+    const passwordParam = urlParams.get('pwd');
+    
+    if (orgIdParam) {
+      const orgIdField = document.getElementById('ec-org-id');
+      if (orgIdField) {
+        orgIdField.value = orgIdParam;
+        console.log('✅ Pre-filled EC org ID from URL:', orgIdParam);
+      }
+    }
+    
+    if (passwordParam) {
+      const passwordField = document.getElementById('ec-pass');
+      if (passwordField) {
+        passwordField.value = passwordParam;
+        console.log('✅ Pre-filled EC password from URL');
+        // Clear password from URL for security
+        const newUrl = new URL(window.location);
+        newUrl.searchParams.delete('pwd');
+        window.history.replaceState({}, '', newUrl);
+      }
+    }
+    
+    // Fallback to sessionStorage
     const inviteOrgId = sessionStorage.getItem('inviteOrgId');
-    if (inviteOrgId) {
+    if (inviteOrgId && !orgIdParam) {
       const orgIdField = document.getElementById('ec-org-id');
       if (orgIdField) {
         orgIdField.value = inviteOrgId;

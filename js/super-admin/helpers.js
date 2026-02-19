@@ -8,6 +8,7 @@ import { doc, getDoc, collection, getDocs, setDoc, serverTimestamp } from 'https
 import { showScreen, showToast, createModal, getDefaultLogo } from '../utils/ui-helpers.js';
 import { escapeHtml, validateEmail } from '../utils/validation.js';
 import { logActivity } from '../utils/activity.js';
+import { buildECInviteTemplate } from '../invites/templates.js';
 
 /**
  * Open organization as EC (one-click direct access)
@@ -71,8 +72,9 @@ export async function openOrgAsEC(orgId) {
  * @param {string} orgId - Organization ID
  * @param {string} orgName - Organization name
  * @param {string} ecPassword - EC password
+ * @param {string} ecName - EC name
  */
-export function showECInviteModal(orgId, orgName, ecPassword) {
+export function showECInviteModal(orgId, orgName, ecPassword, ecName = 'Election Commissioner') {
   const modal = createModal(
     `<i class="fas fa-paper-plane"></i> Send EC Invite for ${orgName}`,
     `
@@ -87,7 +89,7 @@ export function showECInviteModal(orgId, orgName, ecPassword) {
         </div>
         <div>
           <label class="label">EC Name</label>
-          <input id="ecInviteName" class="input" placeholder="Election Commissioner" value="Election Commissioner">
+          <input id="ecInviteName" class="input" placeholder="Election Commissioner" value="${escapeHtml(ecName)}">
         </div>
         <div>
           <label class="label">Email Address</label>
@@ -107,7 +109,7 @@ export function showECInviteModal(orgId, orgName, ecPassword) {
             <i class="fas fa-link"></i> EC Login Link:
           </div>
           <div style="font-size: 12px; color: #9beaff; word-break: break-all;">
-            ${window.location.origin}${window.location.pathname}?org=${orgId}&role=ec
+            ${window.location.origin}?role=ec&org=${orgId}
           </div>
         </div>
       </div>
@@ -148,6 +150,15 @@ export async function sendECInvite(orgId, orgName, ecPassword) {
   try {
     showToast(`Sending credentials to ${email}...`, 'info');
     
+    const appUrl = window.location.origin;
+    const emailTemplate = buildECInviteTemplate({
+      ecName,
+      orgName,
+      orgId,
+      password: ecPassword,
+      appUrl
+    });
+
     const response = await fetch('/.netlify/functions/send-invite', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -160,7 +171,8 @@ export async function sendECInvite(orgId, orgName, ecPassword) {
         credentials: {
           password: ecPassword,
           type: 'password'
-        }
+        },
+        emailTemplate
       })
     });
     
@@ -173,7 +185,7 @@ export async function sendECInvite(orgId, orgName, ecPassword) {
       const inviteRef = doc(db, "organizations", orgId, "invites", `ec_${Date.now()}`);
       await setDoc(inviteRef, {
         type: 'ec',
-        email: email,
+        recipientEmail: email,
         name: ecName,
         sentAt: serverTimestamp(),
         sentBy: 'Super Admin',
@@ -238,8 +250,8 @@ export async function sendECInviteSMS(orgId, orgName, ecPassword) {
     
     showToast(`Sending SMS to ${formattedPhone}...`, 'info');
     
-    const appUrl = window.location.origin + window.location.pathname;
-    const message = `Hi ${ecName}! You've been assigned as Election Commissioner for ${orgName}. Login: ${appUrl}?org=${orgId}&role=ec | Org ID: ${orgId} | Password: ${ecPassword}${customMessage ? ' | ' + customMessage : ''}`;
+    const appUrl = window.location.origin;
+    const message = `Hi ${ecName}! You've been assigned as Election Commissioner for ${orgName}. Login: ${appUrl}?role=ec&org=${orgId} | Org ID: ${orgId} | Password: ${ecPassword}${customMessage ? ' | ' + customMessage : ''}`;
     
     console.log('SMS message:', message);
     console.log('Calling SMS function at: /.netlify/functions/send-invite-sms');
@@ -275,7 +287,7 @@ export async function sendECInviteSMS(orgId, orgName, ecPassword) {
         const inviteRef = doc(db, "organizations", orgId, "invites", `ec_sms_${Date.now()}`);
         await setDoc(inviteRef, {
           type: 'ec_sms',
-          phone: formattedPhone,
+          recipientPhone: formattedPhone,
           name: ecName,
           sentAt: serverTimestamp(),
           sentBy: 'Super Admin',
@@ -349,21 +361,27 @@ export async function sendECInviteWhatsApp(orgId, orgName, ecPassword) {
     
     showToast(`Sending WhatsApp to ${formattedPhone}...`, 'info');
     
-    const appUrl = window.location.origin + window.location.pathname;
-    const message = `Hi ${ecName}! 👋\n\nYou've been assigned as Election Commissioner for *${orgName}*.\n\n📋 *Login Details:*\n🔗 Link: ${appUrl}?org=${orgId}&role=ec\n🆔 Org ID: ${orgId}\n🔑 Password: ${ecPassword}\n${customMessage ? '\n💬 ' + customMessage : ''}\n\n✨ Manage your election from the EC dashboard!`;
+    const appUrl = window.location.origin;
+    const loginLink = `${appUrl}?role=ec&org=${orgId}&pwd=${encodeURIComponent(ecPassword)}`;
     
-    console.log('WhatsApp message:', message);
     console.log('Calling WhatsApp function at: /.netlify/functions/send-whatsapp');
+    
+    const payload = {
+      type: 'ec',
+      phone: formattedPhone,
+      data: {
+        "1": ecName,
+        "2": loginLink
+      },
+      orgId: orgId
+    };
+    
+    console.log('📱 WhatsApp Payload:', JSON.stringify(payload, null, 2));
     
     const response = await fetch('/.netlify/functions/send-whatsapp', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        to: formattedPhone,
-        message: message,
-        voterName: ecName,
-        orgId: orgId
-      })
+      body: JSON.stringify(payload)
     });
     
     console.log('WhatsApp Response status:', response.status);
@@ -377,7 +395,7 @@ export async function sendECInviteWhatsApp(orgId, orgName, ecPassword) {
     const result = await response.json();
     console.log('WhatsApp Result:', result);
     
-    if (result.ok) {
+    if (result.success) {
       showToast(`✅ WhatsApp invite sent to ${formattedPhone}`, 'success');
       
       // Log invite in Firestore (non-blocking)
@@ -385,7 +403,7 @@ export async function sendECInviteWhatsApp(orgId, orgName, ecPassword) {
         const inviteRef = doc(db, "organizations", orgId, "invites", `ec_whatsapp_${Date.now()}`);
         await setDoc(inviteRef, {
           type: 'ec_whatsapp',
-          phone: formattedPhone,
+          recipientPhone: formattedPhone,
           name: ecName,
           sentAt: serverTimestamp(),
           sentBy: 'Super Admin',
@@ -432,8 +450,17 @@ export async function sendECInviteEmail(orgId, orgName, ecPassword, email, ecNam
   try {
     showToast(`Sending credentials to ${email}...`, 'info');
     
-    const loginLink = `${window.location.origin}${window.location.pathname}?org=${orgId}&role=ec`;
+    const loginLink = `${window.location.origin}?role=ec&org=${orgId}`;
     
+    const appUrl = window.location.origin;
+    const emailTemplate = buildECInviteTemplate({
+      ecName,
+      orgName,
+      orgId,
+      password: ecPassword,
+      appUrl
+    });
+
     const response = await fetch('/.netlify/functions/send-invite', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -446,7 +473,8 @@ export async function sendECInviteEmail(orgId, orgName, ecPassword, email, ecNam
         credentials: {
           password: ecPassword,
           type: 'password'
-        }
+        },
+        emailTemplate
       })
     });
     
@@ -459,7 +487,7 @@ export async function sendECInviteEmail(orgId, orgName, ecPassword, email, ecNam
       const inviteRef = doc(db, "organizations", orgId, "invites", `ec_${Date.now()}`);
       await setDoc(inviteRef, {
         type: 'ec',
-        email: email,
+        recipientEmail: email,
         name: ecName,
         sentAt: serverTimestamp(),
         sentBy: 'Super Admin',
@@ -491,7 +519,7 @@ export async function sendECInviteEmail(orgId, orgName, ecPassword, email, ecNam
  */
 export function showECWhatsAppModal(orgId, orgName, ecPassword) {
   try {
-    const loginLink = `${window.location.origin}${window.location.pathname}?org=${encodeURIComponent(orgId)}&role=ec`;
+    const loginLink = `${window.location.origin}?role=ec&org=${encodeURIComponent(orgId)}`;
     createModal(
       `<i class="fab fa-whatsapp"></i> Send EC Invite (WhatsApp)`,
       `
@@ -761,6 +789,58 @@ export async function viewOrgDetails(orgId) {
   }
 }
 
+/**
+ * Contact EC via WhatsApp direct link
+ * @param {string} ecPhone - EC's phone number
+ * @param {string} ecName - EC's name
+ * @param {string} orgName - Organization name
+ * @param {string} orgId - Organization ID
+ */
+export function contactECViaWhatsApp(ecPhone, ecName, orgName, orgId = null) {
+  if (!ecPhone || ecPhone.trim() === '') {
+    showToast('No phone number available for this EC', 'error');
+    return;
+  }
+
+  // Format phone number for WhatsApp (remove spaces, dashes, parentheses)
+  let formattedPhone = ecPhone.replace(/[\s\-\(\)]/g, '');
+  
+  // If starts with 0, replace with Ghana country code
+  if (formattedPhone.startsWith('0')) {
+    formattedPhone = '233' + formattedPhone.substring(1);
+  }
+  
+  // Remove + if present
+  if (formattedPhone.startsWith('+')) {
+    formattedPhone = formattedPhone.substring(1);
+  }
+
+  // Pre-filled message
+  const message = encodeURIComponent(
+    `Hello ${ecName},\n\n` +
+    `I'm reaching out regarding the ${orgName} election.\n\n` +
+    `Best regards,\n` +
+    `Super Admin - Voting Platform`
+  );
+
+  // WhatsApp web/app URL
+  const whatsappUrl = `https://wa.me/${formattedPhone}?text=${message}`;
+
+  // Open in new tab
+  window.open(whatsappUrl, '_blank');
+  
+  showToast(`Opening WhatsApp chat with ${ecName}...`, 'success');
+  
+  // Log communication attempt
+  logActivity({
+    type: 'whatsapp_contact_initiated',
+    message: `Super Admin initiated WhatsApp contact with ${ecName} (${orgName})`,
+    orgId: orgId,
+    actor: 'Super Admin',
+    role: 'superadmin'
+  }).catch(err => console.warn('Failed to log activity:', err));
+}
+
 // Export to window for backwards compatibility
 if (typeof window !== 'undefined') {
   window.openOrgAsEC = openOrgAsEC;
@@ -774,4 +854,5 @@ if (typeof window !== 'undefined') {
   window.closeModal = closeModal;
   window.showPasswordModal = showPasswordModal;
   window.viewOrgDetails = viewOrgDetails;
+  window.contactECViaWhatsApp = contactECViaWhatsApp;
 }

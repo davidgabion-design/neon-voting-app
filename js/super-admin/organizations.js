@@ -59,10 +59,10 @@ export async function loadSuperOrganizationsEnhanced() {
         <h3><i class="fas fa-building"></i> Organizations (${orgs.length})</h3>
         <div style="display:flex;gap:8px">
           <button class="btn neon-btn" onclick="window.showCreateOrgModal()">
-            <i class="fas fa-plus"></i> Create New
+            <i class="fas fa-plus"></i> <span data-i18n="create_new">Create New</span>
           </button>
           <button class="btn neon-btn-outline" onclick="window.loadSuperOrganizationsEnhanced()">
-            <i class="fas fa-redo"></i> Refresh
+            <i class="fas fa-redo"></i> <span data-i18n="refresh">Refresh</span>
           </button>
         </div>
       </div>
@@ -109,9 +109,9 @@ export async function loadSuperOrganizationsEnhanced() {
       // Approval badge
       const approvalStatus = org.approval?.status || 'pending';
       const approvalBadge = approvalStatus === 'approved' ? 
-        '<span style="font-size:12px;padding:4px 10px;border-radius:20px;background:rgba(0,255,170,0.12);color:#00ffaa;border:1px solid rgba(0,255,170,0.25);display:inline-flex;align-items:center;gap:6px"><i class="fas fa-check-circle"></i> Approved</span>' :
-        `<span style="font-size:12px;padding:4px 10px;border-radius:20px;background:rgba(255,193,7,0.12);color:#ffc107;border:1px solid rgba(255,193,7,0.25);display:inline-flex;align-items:center;gap:6px"><i class="fas fa-hourglass-half"></i> Pending</span>
-         <button class="btn neon-btn" style="padding:6px 10px;font-size:12px;margin-left:8px" onclick="window.approveElection('${org.id}')"><i class="fas fa-stamp"></i> Approve</button>`;
+        '<span style="font-size:12px;padding:4px 10px;border-radius:20px;background:rgba(0,255,170,0.12);color:#00ffaa;border:1px solid rgba(0,255,170,0.25);display:inline-flex;align-items:center;gap:6px"><i class="fas fa-check-circle"></i> <span data-i18n="approved_label">Approved</span></span>' :
+        `<span style="font-size:12px;padding:4px 10px;border-radius:20px;background:rgba(255,193,7,0.12);color:#ffc107;border:1px solid rgba(255,193,7,0.25);display:inline-flex;align-items:center;gap:6px"><i class="fas fa-hourglass-half"></i> <span data-i18n="pending_label">Pending</span></span>
+         <button class="btn neon-btn" style="padding:6px 10px;font-size:12px;margin-left:8px" onclick="window.approveElection('${org.id}')"><i class="fas fa-stamp"></i> <span data-i18n="approve">Approve</span></button>`;
       
       html += `
         <div class="org-card card">
@@ -143,13 +143,16 @@ export async function loadSuperOrganizationsEnhanced() {
           <!-- ACTIONS -->
           <div class="org-actions" style="display:flex;gap:8px">
             <button class="btn neon-btn" onclick="window.openOrgAsEC('${org.id}')" style="flex:1">
-              <i class="fas fa-user-tie"></i> Enter EC Panel
+              <i class="fas fa-user-tie"></i> <span data-i18n="enter_ec_panel">Enter EC Panel</span>
             </button>
             <button class="btn neon-btn-outline" onclick="window.editOrganizationModal('${org.id}')" title="Edit">
               <i class="fas fa-edit"></i>
             </button>
-            <button class="btn neon-btn-outline" onclick="window.showECInviteModal('${org.id}', '${escapeHtml(org.name || org.id)}', '${org.ecPassword || ''}')" title="Invite">
+            <button class="btn neon-btn-outline" onclick="window.showECInviteModal('${org.id}', '${escapeHtml(org.name || org.id)}', '${org.ecPassword || ''}', '${escapeHtml(org.ecName || 'Election Commissioner')}')" title="Invite">
               <i class="fas fa-envelope"></i>
+            </button>
+            <button class="btn neon-btn-outline" onclick="window.contactECViaWhatsApp('${org.ecPhone || ''}', '${escapeHtml(org.ecName || 'EC')}', '${escapeHtml(org.name || org.id)}', '${org.id}')" title="Contact EC via WhatsApp" ${!org.ecPhone || org.ecPhone.trim() === '' ? 'disabled style="opacity:0.4"' : 'style="background:linear-gradient(135deg,rgba(37,211,102,0.1),rgba(18,140,126,0.1));color:#25D366"'}>
+              <i class="fab fa-whatsapp"></i>
             </button>
             <button class="btn neon-btn-outline" onclick="window.showPasswordModal('${org.id}', '${org.ecPassword || ''}')" title="Password"> 
               <i class="fas fa-eye"></i>
@@ -550,9 +553,8 @@ export async function createNewOrganization() {
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
       approval: {
-        status: 'pending',
-        requestedAt: serverTimestamp(),
-        requestedBy: 'superadmin'
+        status: 'draft',
+        createdAt: serverTimestamp()
       }
     });
     
@@ -644,6 +646,11 @@ export async function editOrganizationModal(orgId) {
           </div>
           
           <div>
+            <label class="label">EC Name</label>
+            <input id="editOrgECName" class="input" value="${escapeHtml(org.ecName || 'Election Commissioner')}" placeholder="Election Commissioner">
+          </div>
+          
+          <div>
             <label class="label">EC Email (optional)</label>
             <input id="editOrgECEmail" class="input" type="email" value="${escapeHtml(org.ecEmail || '')}" placeholder="ec@example.com">
           </div>
@@ -725,6 +732,7 @@ export async function saveOrganizationEdits(orgId) {
     const name = document.getElementById('editOrgName')?.value.trim();
     const electionType = document.getElementById('editOrgElectionType')?.value;
     const description = document.getElementById('editOrgDesc')?.value.trim();
+    const ecName = document.getElementById('editOrgECName')?.value.trim();
     const ecEmail = document.getElementById('editOrgECEmail')?.value.trim();
     const ecPhone = document.getElementById('editOrgECPhone')?.value.trim();
     const newECPass = document.getElementById('editOrgECPass')?.value;
@@ -751,6 +759,7 @@ export async function saveOrganizationEdits(orgId) {
       name: name,
       electionType: electionType,
       description: description,
+      ecName: ecName || 'Election Commissioner',
       ecEmail: ecEmail || null,
       ecPhone: ecPhone || null,
       updatedAt: serverTimestamp()

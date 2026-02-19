@@ -21,9 +21,8 @@ netlify env:set SMTP_FROM "your-email@gmail.com"
 ```bash
 netlify env:set TWILIO_ACCOUNT_SID "your-account-sid"
 netlify env:set TWILIO_AUTH_TOKEN "your-auth-token"
-netlify env:set TWILIO_SMS_FROM "+1234567890"
-netlify env:set TWILIO_PHONE_NUMBER "+1234567890"
-netlify env:set TWILIO_WHATSAPP_FROM "whatsapp:+1234567890"
+# Single canonical sender for BOTH SMS + WhatsApp (E.164)
+netlify env:set TWILIO_SENDER_E164 "+1234567890"
 ```
 
 **Get Twilio credentials:**
@@ -45,9 +44,7 @@ netlify env:set SMTP_FROM "YOUR_EMAIL"
 netlify env:set APP_URL "https://neonvotingsystemz.netlify.app"
 netlify env:set TWILIO_ACCOUNT_SID "YOUR_SID"
 netlify env:set TWILIO_AUTH_TOKEN "YOUR_TOKEN"
-netlify env:set TWILIO_SMS_FROM "YOUR_TWILIO_NUMBER"
-netlify env:set TWILIO_PHONE_NUMBER "YOUR_TWILIO_NUMBER"
-netlify env:set TWILIO_WHATSAPP_FROM "whatsapp:YOUR_TWILIO_NUMBER"
+netlify env:set TWILIO_SENDER_E164 "+YOUR_TWILIO_NUMBER"
 ```
 
 ## After adding variables:

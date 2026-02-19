@@ -4,15 +4,27 @@ const admin = require('firebase-admin');
 // Initialize Firebase Admin with service account or use default credentials
 if (!admin.apps.length) {
   try {
-    admin.initializeApp({
-      credential: admin.credential.cert({
-        projectId: process.env.FIREBASE_PROJECT_ID,
-        clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-        privateKey: process.env.FIREBASE_PRIVATE_KEY ? process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n') : null,
-      }),
-    });
+    const projectId = process.env.FIREBASE_PROJECT_ID;
+    const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
+    let privateKey = process.env.FIREBASE_PRIVATE_KEY;
+
+    if (!projectId || !clientEmail || !privateKey) {
+      console.error('Missing Firebase Admin environment variables');
+    } else {
+      privateKey = privateKey.replace(/\\n/g, '\n');
+
+      admin.initializeApp({
+        credential: admin.credential.cert({
+          projectId,
+          clientEmail,
+          privateKey,
+        }),
+      });
+
+      console.log('Firebase Admin initialized successfully');
+    }
   } catch (err) {
-    console.error('Firebase Admin init failed:', err);
+    console.error('Firebase Admin initialization failed:', err);
   }
 }
 

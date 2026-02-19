@@ -7,6 +7,7 @@ import { db } from '../config/firebase.js';
 import { collection, addDoc, serverTimestamp } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js';
 import { showToast } from '../utils/ui-helpers.js';
 import { validateEmail } from '../utils/validation.js';
+import { buildVoterInviteTemplate, buildECInviteTemplate, buildVoterSmsInviteMessage } from './templates.js';
 
 /**
  * Send email invitation to voter
@@ -28,6 +29,15 @@ export async function sendVoterInvite(voterEmail, voterName, voterPhone) {
     
     showToast("Sending voter invitation...", "info");
     
+    const appUrl = (typeof window !== 'undefined' && window.APP_URL) ? window.APP_URL : window.location.origin;
+    const emailTemplate = buildVoterInviteTemplate({
+      voterName: voterName || "Voter",
+      orgName: window.currentOrgData.name || window.currentOrgId,
+      orgId: window.currentOrgId,
+      email: credential,
+      appUrl
+    });
+
     const response = await fetch("/.netlify/functions/send-invite", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -37,7 +47,8 @@ export async function sendVoterInvite(voterEmail, voterName, voterPhone) {
         orgName: window.currentOrgData.name || window.currentOrgId,
         orgId: window.currentOrgId,
         recipientName: voterName || "Voter",
-        credentials: { credential: credential, type: credentialType }
+        credentials: { credential: credential, type: credentialType },
+        emailTemplate
       })
     });
     
@@ -117,7 +128,12 @@ export async function sendVoterInviteSMS(voterPhone, voterName) {
     console.log("📱 Phone length (should be 13):", formattedPhone.length);
     
     const appUrl = (typeof window !== 'undefined' && window.APP_URL) ? window.APP_URL : window.location.origin;
-    const message = `Hi ${voterName}! You're invited to vote in ${window.currentOrgData.name || window.currentOrgId} election. Visit: ${appUrl}?role=voter&org=${window.currentOrgId} and log in with your phone. 🗳️`;
+    const message = buildVoterSmsInviteMessage({
+      voterName: voterName || "Voter",
+      orgName: window.currentOrgData.name || window.currentOrgId,
+      orgId: window.currentOrgId,
+      appUrl
+    });
     
     console.log("📱 SMS Message:", message);
     console.log("📱 Message length:", message.length);
@@ -154,7 +170,7 @@ export async function sendVoterInviteSMS(voterPhone, voterName) {
       const inviteRef = collection(db, "organizations", window.currentOrgId, "invites");
       await addDoc(inviteRef, {
         type: "voter_sms",
-        phone: formattedPhone,
+        recipientPhone: formattedPhone,
         name: voterName || "Voter",
         sentAt: serverTimestamp(),
         status: result.status || "sent",
@@ -221,8 +237,8 @@ export async function sendVoterInviteWhatsApp(voterPhone, voterName) {
       }
     }
     
-    const appUrl = window.location.origin;
-    const message = `Hi ${voterName}! You're invited to vote in ${window.currentOrgData.name || window.currentOrgId} election. Visit: ${appUrl}?role=voter&org=${window.currentOrgId} and log in. 🗳️`;
+    const appUrl = (typeof window !== 'undefined' && window.APP_URL) ? window.APP_URL : window.location.origin;
+    const votingLink = `${appUrl}?role=voter&org=${window.currentOrgId}`;
     
     showToast("Sending WhatsApp invitation...", "info");
     
@@ -230,9 +246,12 @@ export async function sendVoterInviteWhatsApp(voterPhone, voterName) {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        to: formattedPhone,
-        message: message,
-        voterName: voterName,
+        type: "invite",
+        phone: formattedPhone,
+        data: {
+          1: voterName || "Voter",
+          2: votingLink
+        },
         orgId: window.currentOrgId
       })
     });
@@ -249,13 +268,13 @@ export async function sendVoterInviteWhatsApp(voterPhone, voterName) {
     }
     
     const text = await response.text();
-    const result = text ? JSON.parse(text) : { ok: false, error: "Empty response" };
+    const result = text ? JSON.parse(text) : { success: false, error: "Empty response" };
     
-    if (result.ok) {
+    if (result.success) {
       const inviteRef = collection(db, "organizations", window.currentOrgId, "invites");
       await addDoc(inviteRef, {
         type: "voter_whatsapp",
-        phone: formattedPhone,
+        recipientPhone: formattedPhone,
         name: voterName || "Voter",
         sentAt: serverTimestamp(),
         status: result.status || "sent",
@@ -271,11 +290,33 @@ export async function sendVoterInviteWhatsApp(voterPhone, voterName) {
       
       showToast(statusMsg, "success");
       
-      // Additional info for queued messages
-      if (result.status === 'queued') {
-        setTimeout(() => {
-          showToast("💬 WhatsApp message is being delivered by Twilio.", "info", 3000);
-        }, 1500);
+      // Additional info for queued messages: poll status once and show result
+      if (result.status === 'queued' && result.sid) {
+        setTimeout(async () => {
+          try {
+            const pollRes = await fetch('/.netlify/functions/poll-twilio-status', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ sid: result.sid })
+            });
+            if (pollRes.ok) {
+              const pollData = await pollRes.json();
+              if (pollData.ok && pollData.message) {
+                const s = pollData.message.status;
+                if (s === 'delivered') {
+                  showToast('✅ WhatsApp delivered', 'success');
+                } else if (s === 'failed' || s === 'undelivered') {
+                  const ec = pollData.message.errorCode;
+                  showToast('❌ WhatsApp not delivered' + (ec ? ` (Code ${ec})` : ''), 'error', 5000);
+                } else {
+                  showToast('ℹ️ WhatsApp status: ' + s, 'info');
+                }
+              }
+            }
+          } catch (e) {
+            console.warn('Poll status failed:', e.message);
+          }
+        }, 5000);
       }
     } else {
       // Show user-friendly error messages
@@ -313,6 +354,15 @@ export async function sendECInvite(orgId, orgName, ecPassword) {
     
     showToast('Sending EC invitation...', 'info');
     
+    const appUrl = (typeof window !== 'undefined' && window.APP_URL) ? window.APP_URL : window.location.origin;
+    const emailTemplate = buildECInviteTemplate({
+      ecName,
+      orgName: orgName || orgId,
+      orgId: orgId,
+      password: ecPassword,
+      appUrl
+    });
+
     const response = await fetch('/.netlify/functions/send-invite', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -322,7 +372,8 @@ export async function sendECInvite(orgId, orgName, ecPassword) {
         orgName: orgName || orgId,
         orgId: orgId,
         recipientName: ecName,
-        credentials: { password: ecPassword }
+        credentials: { password: ecPassword },
+        emailTemplate
       })
     });
     
@@ -344,7 +395,7 @@ export async function sendECInvite(orgId, orgName, ecPassword) {
       const inviteRef = collection(db, "organizations", orgId, "invites");
       await addDoc(inviteRef, {
         type: "ec",
-        email: email,
+        recipientEmail: email,
         name: ecName,
         sentAt: serverTimestamp(),
         status: "sent",

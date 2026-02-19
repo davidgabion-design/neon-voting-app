@@ -126,30 +126,28 @@ export async function exportResultsPDF(orgId) {
     const orgSnap = await getDoc(doc(db, "organizations", orgId));
     const org = orgSnap.exists() ? orgSnap.data() : {};
     
-    // Load images for PDF (after org data is available)
-    const appLogoData = await loadImageAsBase64('./neon-logo.png');
+    // Load images for PDF (after org data is available) - use absolute URLs
+    const appLogoData = await loadImageAsBase64(`${window.location.origin}/neon-logo.png`);
     const orgLogoData = org.logoUrl ? await loadImageAsBase64(org.logoUrl) : null;
     
-    // Professional color scheme
-    const headerBg = [26, 189, 156]; // Teal #1ABD9C
+    // Professional color scheme - Dark purple theme to match Neon logo background
+    const headerBg = [20, 0, 40]; // Very dark purple (almost black) #140028
     const headerText = [255, 255, 255]; // White
-    const titleColor = [30, 130, 110]; // Dark teal
+    const titleColor = [157, 0, 255]; // Bright purple #9D00FF
     const textDark = [40, 40, 50]; // Dark gray
     const textLight = [100, 100, 110]; // Light gray
     const borderColor = [200, 200, 210]; // Light border
     const rowBg1 = [255, 255, 255]; // White
-    const rowBg2 = [248, 250, 251]; // Very light blue-gray
+    const rowBg2 = [250, 245, 255]; // Very light purple
 
     // ===== HEADER SECTION =====
-    pdf.setFillColor(26, 189, 156);
+    pdf.setFillColor(20, 0, 40);
     pdf.rect(0, 0, 210, 28, "F");
 
     // App Logo (Neon)
     if (appLogoData) {
       try {
-        // Add matching background behind logo for seamless blend
-        pdf.setFillColor(26, 189, 156);
-        pdf.rect(margin - 1, 3, 22, 22, "F");
+        // Logo placed directly on header for seamless blend
         pdf.addImage(appLogoData, 'PNG', margin, 4, 20, 20);
       } catch (e) {
         console.warn('Failed to add app logo to PDF:', e);
@@ -165,7 +163,7 @@ export async function exportResultsPDF(orgId) {
     // Subtitle
     pdf.setFontSize(9);
     pdf.setFont("helvetica", "normal");
-    pdf.setTextColor(220, 240, 235);
+    pdf.setTextColor(220, 200, 255);
     pdf.text("Neon Voting Platform - Official Results Report", appLogoData ? margin + 24 : margin, 19);
 
     y = 35;
@@ -174,7 +172,7 @@ export async function exportResultsPDF(orgId) {
     // (org data already fetched above)
 
     // Meta info box background
-    pdf.setFillColor(248, 250, 251);
+    pdf.setFillColor(250, 245, 255);
     const metaBoxHeight = orgLogoData ? 24 : 18;
     pdf.rect(margin, y - 2, maxW, metaBoxHeight, "F");
     pdf.setDrawColor(200, 200, 210);
@@ -193,7 +191,7 @@ export async function exportResultsPDF(orgId) {
 
     pdf.setFontSize(10);
     pdf.setFont("helvetica", "bold");
-    pdf.setTextColor(30, 130, 110);
+    pdf.setTextColor(157, 0, 255);
     pdf.text("ELECTION DETAILS", textStartX, y + 2);
 
     pdf.setFont("helvetica", "normal");
@@ -301,14 +299,14 @@ export async function exportResultsPDF(orgId) {
     const totalBallots = votesSnap.size;
 
     // ===== SUMMARY STATS SECTION =====
-    pdf.setFillColor(248, 250, 251);
+    pdf.setFillColor(250, 245, 255);
     pdf.rect(margin, y - 2, maxW, 14, "F");
     pdf.setDrawColor(200, 200, 210);
     pdf.rect(margin, y - 2, maxW, 14);
 
     pdf.setFontSize(10);
     pdf.setFont("helvetica", "bold");
-    pdf.setTextColor(30, 130, 110);
+    pdf.setTextColor(157, 0, 255);
     pdf.text("VOTING SUMMARY", margin + 3, y + 2);
 
     pdf.setFont("helvetica", "normal");
@@ -335,7 +333,7 @@ export async function exportResultsPDF(orgId) {
       // ===== POSITION HEADER =====
       pdf.setFontSize(11);
       pdf.setFont("helvetica", "bold");
-      pdf.setTextColor(30, 130, 110);
+      pdf.setTextColor(157, 0, 255);
       pdf.text((pos.title || pos.name || "POSITION").toUpperCase(), margin, y);
       y += 5;
 
@@ -357,7 +355,7 @@ export async function exportResultsPDF(orgId) {
       const rowHeight = 12; // Increased for photos
 
       // TABLE HEADER
-      pdf.setFillColor(26, 189, 156);
+      pdf.setFillColor(20, 0, 40);
       pdf.rect(tableX, y, maxW, headerHeight, "F");
 
       pdf.setFontSize(9);
@@ -423,7 +421,12 @@ export async function exportResultsPDF(orgId) {
             if (cand.photoUrl) {
               const photoData = await loadImageAsBase64(cand.photoUrl);
               if (photoData) {
-                photoDataCache[cand.name] = photoData;
+                // Detect actual image format from data URL so jsPDF renders correctly
+                const fmtMatch = /^data:image\/(png|jpeg|jpg|webp)/i.exec(photoData);
+                const fmt = fmtMatch
+                  ? fmtMatch[1].toUpperCase().replace('JPG', 'JPEG')
+                  : 'PNG';
+                photoDataCache[cand.name] = { data: photoData, format: fmt };
               }
             }
           })
@@ -435,7 +438,7 @@ export async function exportResultsPDF(orgId) {
           if (idx % 2 === 0) {
             pdf.setFillColor(255, 255, 255);
           } else {
-            pdf.setFillColor(248, 250, 251);
+            pdf.setFillColor(250, 245, 255);
           }
           pdf.rect(tableX, y, maxW, rowHeight, "F");
 
@@ -454,7 +457,7 @@ export async function exportResultsPDF(orgId) {
           if (photoData) {
             try {
               // Add photo with rounded corners effect (small border)
-              pdf.addImage(photoData, 'PNG', tableX + 2, y + 1, 10, 10);
+              pdf.addImage(photoData.data, photoData.format, tableX + 2, y + 1, 10, 10);
               pdf.setDrawColor(220, 220, 230);
               pdf.setLineWidth(0.3);
               pdf.rect(tableX + 2, y + 1, 10, 10);

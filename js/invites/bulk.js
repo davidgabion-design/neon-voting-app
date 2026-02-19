@@ -7,6 +7,7 @@ import { db } from '../config/firebase.js';
 import { collection, getDocs, addDoc, serverTimestamp } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js';
 import { showToast, createModal } from '../utils/ui-helpers.js';
 import { escapeHtml } from '../utils/validation.js';
+import { buildVoterInviteTemplate, buildVoterSmsInviteMessage } from './templates.js';
 
 /**
  * Show bulk voter invite modal
@@ -153,6 +154,15 @@ export async function sendBulkVoterInvites() {
             skippedCount++;
             continue;
           }
+          const appUrl = window.location.origin;
+          const emailTemplate = buildVoterInviteTemplate({
+            voterName: name || "Voter",
+            orgName: window.currentOrgData?.name || window.currentOrgId,
+            orgId: window.currentOrgId,
+            email,
+            appUrl
+          });
+
           response = await fetch("/.netlify/functions/send-invite", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -162,7 +172,8 @@ export async function sendBulkVoterInvites() {
               orgName: window.currentOrgData?.name || window.currentOrgId,
               orgId: window.currentOrgId,
               recipientName: name,
-              credentials: { credential: email, type: 'email' }
+              credentials: { credential: email, type: 'email' },
+              emailTemplate
             })
           });
           inviteType = "voter";
@@ -187,7 +198,12 @@ export async function sendBulkVoterInvites() {
           }
           
           const appUrl = window.location.origin;
-          const message = `Hi ${name}! You're invited to vote in ${window.currentOrgData?.name || window.currentOrgId} election. Visit: ${appUrl} Use Org ID: ${window.currentOrgId} 🗳️`;
+          const message = buildVoterSmsInviteMessage({
+            voterName: name || "Voter",
+            orgName: window.currentOrgData?.name || window.currentOrgId,
+            orgId: window.currentOrgId,
+            appUrl
+          });
           phoneToStore = formattedPhone; // Store formatted phone
           response = await fetch("/.netlify/functions/send-invite-sms", {
             method: "POST",
@@ -226,15 +242,18 @@ export async function sendBulkVoterInvites() {
             }
           }
           const appUrl = window.location.origin;
-          const message = `Hi ${name}! You're invited to vote in ${window.currentOrgData?.name || window.currentOrgId} election. Visit: ${appUrl} Use Org ID: ${window.currentOrgId} 🗳️`;
+          const votingLink = `${appUrl}?role=voter&org=${window.currentOrgId}`;
           phoneToStore = formattedPhone; // Store formatted phone
           response = await fetch("/.netlify/functions/send-whatsapp", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-              to: formattedPhone,
-              message: message,
-              voterName: name,
+              type: "invite",
+              phone: formattedPhone,
+              data: {
+                1: name || "Voter",
+                2: votingLink
+              },
               orgId: window.currentOrgId
             })
           });
@@ -252,15 +271,15 @@ export async function sendBulkVoterInvites() {
         }
         
         const text = await response.text();
-        const result = text ? JSON.parse(text) : { ok: false };
+        const result = text ? JSON.parse(text) : { success: false };
         
-        if (result.ok) {
+        if (result.success) {
           successCount++;
           const inviteRef = collection(db, "organizations", window.currentOrgId, "invites");
           await addDoc(inviteRef, {
             type: inviteType,
-            email: email || undefined,
-            phone: phoneToStore || undefined,
+            recipientEmail: email || undefined,
+            recipientPhone: phoneToStore || undefined,
             name: name,
             sentAt: serverTimestamp(),
             status: "sent",

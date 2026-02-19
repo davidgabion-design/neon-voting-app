@@ -1,12 +1,25 @@
+<script>
+// Redirect old EC login links to main app with deep-link params
+(function() {
+  if (window.location.pathname.includes('/html/ec/login.html')) {
+    const params = new URLSearchParams(window.location.search);
+    const org = params.get('org');
+    if (org) {
+      const baseUrl = window.location.origin;
+      window.location.replace(`${baseUrl}?role=ec&org=${encodeURIComponent(org)}`);
+    }
+  }
+})();
+</script>
 <section id="ecLoginScreen" class="screen">
   <div class="login-container">
-    <div class="login-card">
+    <div class="login-card" id="ecLoginCard">
       <div class="login-header">
         <div>
           <h2 class="login-title">
-            <i class="fas fa-user-shield"></i> EC Login
+            <i class="fas fa-user-shield"></i> <span data-i18n="ec_login">EC Login</span>
           </h2>
-          <p class="login-subtitle">Election Management Portal</p>
+          <p class="login-subtitle" data-i18n="ec_login_subtitle">Election Management Portal</p>
         </div>
         <div style="display:flex;gap:8px;align-items:center">
           <select id="ecLoginLangSelect" class="input" style="max-width:110px;padding:6px 10px;font-size:13px" title="Change Language">
@@ -17,7 +30,7 @@
             <option value="TWI">🇬🇭 TWI</option>
           </select>
           <button id="ec-login-back" class="btn-back">
-            <i class="fas fa-arrow-left"></i> Back
+            <i class="fas fa-arrow-left"></i> <span data-i18n="back">Back</span>
           </button>
         </div>
       </div>
@@ -25,32 +38,38 @@
       <div class="login-body">
         <div class="form-grid">
           <div class="form-group">
-            <label for="ec-org-id">Organization ID</label>
-            <input id="ec-org-id" type="text" placeholder="e.g. ORG-12345" autocomplete="off" />
+            <label for="ec-org-id" data-i18n="organization_id">Organization ID</label>
+            <input id="ec-org-id" type="text" placeholder="e.g. ORG-12345" data-i18n-placeholder="org_id_placeholder" autocomplete="off" />
           </div>
 
           <div class="form-group">
-            <label for="ec-pass">EC Password</label>
-            <input id="ec-pass" type="password" placeholder="Enter EC password" autocomplete="off" />
+            <label for="ec-pass" data-i18n="ec_password">EC Password</label>
+            <input id="ec-pass" type="password" placeholder="Enter EC password" data-i18n-placeholder="ec_password_placeholder" autocomplete="off" />
           </div>
 
           <button id="ec-login-btn" class="btn btn-block neon-btn">
-            <i class="fas fa-right-to-bracket"></i> Login to Dashboard
+            <i class="fas fa-right-to-bracket"></i> <span data-i18n="login_to_dashboard">Login to Dashboard</span>
           </button>
         </div>
 
         <div class="info-banner">
           <i class="fas fa-lock"></i>
           <div>
-            <strong>Secure Access</strong>
-            <div class="subtext">Authorized election officials only • All actions are logged</div>
+            <strong data-i18n="secure_access">Secure Access</strong>
+            <div class="subtext" data-i18n="ec_secure_desc">Authorized election officials only • All actions are logged</div>
           </div>
         </div>
 
         <div style="margin-top:14px;text-align:center">
-          <a href="#" onclick="showScreen('guidanceECScreen')" class="subtext">
+          <a href="#" onclick="showScreen('guidanceECScreen')" class="subtext" data-i18n="need_guidance_link">
             Need guidance before logging in?
           </a>
+        </div>
+      </div>
+
+      <div class="login-footer" style="text-align:center;padding:12px;border-top:1px solid rgba(255,255,255,0.1);margin-top:10px">
+        <div id="ecLoginDateTime" class="subtext" style="font-size:12px;color:rgba(255,255,255,0.6)">
+          <i class="fas fa-clock"></i> <span id="ecLoginDateTimeText"></span>
         </div>
       </div>
     </div>

@@ -16,6 +16,7 @@ import {
 } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js';
 import { showToast, createModal, showQuickLoading, renderError } from '../utils/ui-helpers.js';
 import { escapeHtml, validateEmail } from '../utils/validation.js';
+import { normalizePhoneE164 } from '../utils/normalization.js';
 import { formatFirestoreTimestamp } from '../utils/formatting.js';
 import {
   ADMIN_ROLES,
@@ -235,12 +236,8 @@ window.filterAdministrators = function(searchQuery) {
 window.showAddAdminModal = function() {
   const t = window.t || ((key) => key);
   
-  const modalHtml = `
+  const modalContent = `
     <div style="max-width: 800px; margin: 0 auto">
-      <h3 style="margin-bottom: 20px">
-        <i class="fas fa-user-plus"></i> ${t('add_administrator') || 'Add Administrator'}
-      </h3>
-
       <div class="form-group">
         <label>${t('full_name') || 'Full Name'} *</label>
         <input type="text" id="adminName" class="input" placeholder="${t('enter_full_name') || 'Enter administrator full name'}" required>
@@ -282,18 +279,58 @@ window.showAddAdminModal = function() {
         </div>
       </div>
 
-      <div class="form-actions" style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px">
-        <button type="button" class="btn neon-btn-outline" onclick="closeModal()">
-          ${t('cancel') || 'Cancel'}
-        </button>
-        <button type="button" class="btn neon-btn" onclick="saveNewAdministrator()">
-          <i class="fas fa-save"></i> ${t('save_administrator') || 'Save Administrator'}
-        </button>
+      <div class="card" style="background: rgba(0,234,255,0.05); border: 1px solid rgba(0,234,255,0.2); padding: 15px; margin-top: 20px">
+        <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; margin-bottom: 15px">
+          <input type="checkbox" id="sendInviteCheckbox" onchange="toggleInviteOptions(this.checked)" 
+                 style="width: 18px; height: 18px; cursor: pointer">
+          <span style="font-weight: 500">
+            <i class="fas fa-paper-plane"></i> ${t('send_invite_on_create') || 'Send invitation after creating administrator'}
+          </span>
+        </label>
+        
+        <div id="inviteOptionsContainer" style="display: none; padding-left: 30px; margin-top: 10px">
+          <div class="form-group" style="margin-bottom: 15px">
+            <label style="font-size: 13px; margin-bottom: 8px">${t('phone_number') || 'Phone Number'} (${t('optional') || 'Optional'})</label>
+            <input type="tel" id="adminPhone" class="input" placeholder="+233501234567" style="font-size: 14px">
+            <div class="subtext" style="margin-top: 5px; font-size: 12px">
+              ${t('phone_for_whatsapp') || 'E.164 format (e.g., +233501234567) for WhatsApp invite'}
+            </div>
+          </div>
+          
+          <div style="display: flex; gap: 10px; flex-wrap: wrap">
+            <label style="display: flex; align-items: center; gap: 8px; padding: 8px 12px; border: 1px solid rgba(255,255,255,0.2); border-radius: 6px; cursor: pointer; flex: 1; min-width: 150px"
+                   onmouseover="this.style.background='rgba(0,234,255,0.1)'"
+                   onmouseout="this.style.background='transparent'">
+              <input type="checkbox" id="sendEmailInvite" checked style="cursor: pointer">
+              <i class="fas fa-envelope" style="color: #00eaff"></i>
+              <span style="font-size: 13px">${t('send_email') || 'Send Email'}</span>
+            </label>
+            
+            <label style="display: flex; align-items: center; gap: 8px; padding: 8px 12px; border: 1px solid rgba(255,255,255,0.2); border-radius: 6px; cursor: pointer; flex: 1; min-width: 150px"
+                   onmouseover="this.style.background='rgba(157,0,255,0.1)'"
+                   onmouseout="this.style.background='transparent'">
+              <input type="checkbox" id="sendWhatsAppInvite" style="cursor: pointer">
+              <i class="fab fa-whatsapp" style="color: #25d366"></i>
+              <span style="font-size: 13px">${t('send_whatsapp') || 'Send WhatsApp'}</span>
+            </label>
+          </div>
+        </div>
       </div>
     </div>
   `;
 
-  createModal(modalHtml);
+  const modalTitle = `<i class="fas fa-user-plus"></i> ${t('add_administrator') || 'Add Administrator'}`;
+  
+  const modalButtons = `
+    <button type="button" class="btn neon-btn-outline" onclick="closeModal()">
+      ${t('cancel') || 'Cancel'}
+    </button>
+    <button type="button" class="btn neon-btn" onclick="saveNewAdministrator()">
+      <i class="fas fa-save"></i> ${t('save_administrator') || 'Save Administrator'}
+    </button>
+  `;
+
+  createModal(modalTitle, modalContent, modalButtons);
   
   // Set default role permissions
   setTimeout(() => {
@@ -344,7 +381,11 @@ window.handleRoleChange = function(roleId) {
   const role = getRoleById(roleId);
   if (!role) return;
 
-  const checkboxes = document.querySelectorAll('.permission-checkbox');
+  // Scope to the visible modal
+  const modal = document.querySelector('.modal-overlay .modal');
+  if (!modal) return;
+
+  const checkboxes = modal.querySelectorAll('.permission-checkbox');
   checkboxes.forEach(checkbox => {
     checkbox.checked = role.permissions.includes(checkbox.value);
   });
@@ -354,7 +395,11 @@ window.handleRoleChange = function(roleId) {
  * Toggle all permissions on/off
  */
 window.toggleAllPermissions = function() {
-  const checkboxes = document.querySelectorAll('.permission-checkbox');
+  // Scope to the visible modal
+  const modal = document.querySelector('.modal-overlay .modal');
+  if (!modal) return;
+
+  const checkboxes = modal.querySelectorAll('.permission-checkbox');
   const allChecked = Array.from(checkboxes).every(cb => cb.checked);
   
   checkboxes.forEach(checkbox => {
@@ -363,42 +408,91 @@ window.toggleAllPermissions = function() {
 };
 
 /**
- * Save new administrator
+ * Toggle invite options visibility
+ * @param {boolean} checked - Checkbox state
+ */
+window.toggleInviteOptions = function(checked) {
+  // Scope to the visible modal
+  const modal = document.querySelector('.modal-overlay .modal');
+  if (!modal) return;
+
+  const container = modal.querySelector('#inviteOptionsContainer');
+  if (container) {
+    container.style.display = checked ? 'block' : 'none';
+  }
+};
+
+/**
+ * Save new administrator with optional invite sending
  */
 window.saveNewAdministrator = async function() {
-  const name = document.getElementById('adminName')?.value.trim();
-  const email = document.getElementById('adminEmail')?.value.trim();
-  const password = document.getElementById('adminPassword')?.value;
-  const role = document.getElementById('adminRole')?.value;
-
-  const t = window.t || ((key) => key);
-
-  // Validation
-  if (!name || name.length < 2) {
-    showToast(t('name_required') || 'Name is required (min 2 characters)', 'error');
-    return;
-  }
-
-  if (!validateEmail(email)) {
-    showToast(t('invalid_email') || 'Please enter a valid email address', 'error');
-    return;
-  }
-
-  if (!password || password.length < 8) {
-    showToast(t('password_min_8') || 'Password must be at least 8 characters', 'error');
-    return;
-  }
-
-  // Get selected permissions
-  const permissionCheckboxes = document.querySelectorAll('.permission-checkbox:checked');
-  const permissions = Array.from(permissionCheckboxes).map(cb => cb.value);
-
-  if (permissions.length === 0) {
-    showToast(t('select_permissions') || 'Please select at least one permission', 'error');
-    return;
-  }
-
   try {
+    console.log('[SAVE ADMIN] Function called');
+    
+    const t = window.t || ((key) => key);
+    
+    // Query within the visible modal to avoid stale DOM elements
+    const modal = document.querySelector('.modal-overlay .modal');
+    if (!modal) {
+      showToast('Modal not found', 'error');
+      return;
+    }
+    
+    const nameField = modal.querySelector('#adminName');
+    const emailField = modal.querySelector('#adminEmail');
+    const passwordField = modal.querySelector('#adminPassword');
+    const roleField = modal.querySelector('#adminRole');
+    const phoneField = modal.querySelector('#adminPhone');
+    const inviteCheckbox = modal.querySelector('#sendInviteCheckbox');
+    const emailCheckbox = modal.querySelector('#sendEmailInvite');
+    const whatsappCheckbox = modal.querySelector('#sendWhatsAppInvite');
+    
+    const name = nameField?.value?.trim() || '';
+    const email = emailField?.value?.trim() || '';
+    const password = passwordField?.value || '';
+    const role = roleField?.value || '';
+    const phone = phoneField?.value?.trim() || '';
+    
+    // Invite options
+    const sendInvite = inviteCheckbox?.checked || false;
+    const sendEmail = emailCheckbox?.checked || false;
+    const sendWhatsApp = whatsappCheckbox?.checked || false;
+    
+    console.log('[SAVE ADMIN] Form values:', { name, email, role, phone, sendInvite, sendEmail, sendWhatsApp });
+
+    // Validation
+    if (!name || name.length < 2) {
+      showToast(t('name_required') || 'Name is required (min 2 characters)', 'error');
+      return;
+    }
+
+    if (!validateEmail(email)) {
+      showToast(t('invalid_email') || 'Please enter a valid email address', 'error');
+      return;
+    }
+
+    if (!password || password.length < 8) {
+      showToast(t('password_min_8') || 'Password must be at least 8 characters', 'error');
+      return;
+    }
+    
+    // Validate phone if WhatsApp is selected
+    if (sendInvite && sendWhatsApp && !phone) {
+      showToast(t('phone_required_whatsapp') || 'Phone number required for WhatsApp invite', 'error');
+      return;
+    }
+
+    // Get selected permissions (query within modal)
+    const permissionCheckboxes = modal.querySelectorAll('.permission-checkbox:checked');
+    const permissions = Array.from(permissionCheckboxes).map(cb => cb.value);
+
+    if (permissions.length === 0) {
+      showToast(t('select_permissions') || 'Please select at least one permission', 'error');
+      return;
+    }
+
+    console.log('[SAVE ADMIN] Validation passed, creating admin...');
+
     const adminData = {
       name,
       email: email.toLowerCase(),
@@ -410,6 +504,10 @@ window.saveNewAdministrator = async function() {
       createdBy: 'super_admin', // Get from session
       lastLogin: null
     };
+    
+    if (phone) {
+      adminData.phone = phone;
+    }
 
     // Validate data
     const validation = validateAdminData(adminData);
@@ -427,17 +525,157 @@ window.saveNewAdministrator = async function() {
       return;
     }
 
+    console.log('[SAVE ADMIN] Saving to Firestore...');
+    
     // Save to Firestore
     await setDoc(existingAdminRef, adminData);
 
+    console.log('[SAVE ADMIN] Saved successfully');
+    
     showToast(t('admin_created') || 'Administrator created successfully', 'success');
+    
+    // Send invites if requested
+    if (sendInvite) {
+      await sendAdminInvites(name, email, phone, password, sendEmail, sendWhatsApp);
+    }
+    
     closeModal();
     loadAdministrators();
   } catch (error) {
-    console.error('Error creating administrator:', error);
+    console.error('[SAVE ADMIN] Error:', error);
+    console.error('[SAVE ADMIN] Stack:', error.stack);
     showToast(t('error_creating_admin') || 'Failed to create administrator: ' + error.message, 'error');
   }
 };
+
+/**
+ * Send invites to newly created administrator
+ * @param {string} name - Administrator name
+ * @param {string} email - Administrator email
+ * @param {string} phone - Administrator phone (optional)
+ * @param {string} password - Administrator password
+ * @param {boolean} sendEmail - Send email invite
+ * @param {boolean} sendWhatsApp - Send WhatsApp invite
+ */
+async function sendAdminInvites(name, email, phone, password, sendEmail, sendWhatsApp) {
+  const t = window.t || ((key) => key);
+  const appUrl = window.location.origin;
+  const loginLink = `${appUrl}/html/admin/login.html`;
+  
+  let emailSent = false;
+  let whatsappSent = false;
+  
+  // Send Email Invite
+  if (sendEmail) {
+    try {
+      const emailPayload = {
+        to: email,
+        subject: t('admin_access_granted') || 'Administrator Access Granted - Neon Voting System',
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background: #0a0e27; color: #ffffff; border-radius: 10px;">
+            <h2 style="color: #00eaff; margin-bottom: 20px;">
+              <span style="color: #9D00FF;">●</span> Administrator Access Granted
+            </h2>
+            
+            <p style="font-size: 16px; line-height: 1.6;">Hello <strong>${name}</strong>,</p>
+            
+            <p style="line-height: 1.6;">
+              You have been granted administrator access to the Neon Voting System. 
+              Use the credentials below to log in:
+            </p>
+            
+            <div style="background: rgba(0,234,255,0.1); border-left: 3px solid #00eaff; padding: 15px; margin: 20px 0; border-radius: 5px;">
+              <p style="margin: 5px 0;"><strong>Email:</strong> ${email}</p>
+              <p style="margin: 5px 0;"><strong>Password:</strong> <code style="background: rgba(255,255,255,0.1); padding: 4px 8px; border-radius: 4px;">${password}</code></p>
+              <p style="margin: 5px 0;"><strong>Login URL:</strong> <a href="${loginLink}" style="color: #00eaff;">${loginLink}</a></p>
+            </div>
+            
+            <p style="color: #ff6b6b; font-size: 14px;">
+              <strong>⚠️ Important:</strong> Please change your password after your first login for security.
+            </p>
+            
+            <a href="${loginLink}" style="display: inline-block; background: linear-gradient(135deg, #9D00FF 0%, #00eaff 100%); color: white; padding: 12px 30px; text-decoration: none; border-radius: 25px; margin-top: 20px; font-weight: 500;">
+              Login to Admin Panel
+            </a>
+            
+            <p style="margin-top: 30px; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.1); font-size: 12px; color: #888;">
+              Neon Voting System | Secure Digital Democracy
+            </p>
+          </div>
+        `
+      };
+      
+      const response = await fetch('/.netlify/functions/send-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(emailPayload)
+      });
+      
+      if (response.ok) {
+        emailSent = true;
+        console.log('[ADMIN INVITE] Email sent to:', email);
+      }
+    } catch (error) {
+      console.error('[ADMIN INVITE] Email error:', error);
+    }
+  }
+  
+  // Send WhatsApp Invite
+  if (sendWhatsApp && phone) {
+    try {
+      const normalizedPhone = normalizePhoneE164(phone);
+      if (!normalizedPhone) {
+        throw new Error('Invalid phone number for WhatsApp invite');
+      }
+      const whatsappPayload = {
+        type: 'ec', // Reuse EC access template for admin access
+        phone: normalizedPhone,
+        data: {
+          "1": name,
+          "2": loginLink
+        }
+      };
+      
+      const response = await fetch('/.netlify/functions/send-whatsapp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(whatsappPayload)
+      });
+
+      const text = await response.text();
+      let result = {};
+      try {
+        result = text ? JSON.parse(text) : {};
+      } catch {
+        result = {};
+      }
+
+      if (response.ok && result.success) {
+        whatsappSent = true;
+        console.log('[ADMIN INVITE] WhatsApp sent to:', normalizedPhone);
+      } else {
+        console.warn('[ADMIN INVITE] WhatsApp failed:', result.error || text);
+      }
+    } catch (error) {
+      console.error('[ADMIN INVITE] WhatsApp error:', error);
+    }
+  }
+  
+  // Show summary toast
+  if (emailSent || whatsappSent) {
+    const channels = [];
+    if (emailSent) channels.push('Email');
+    if (whatsappSent) channels.push('WhatsApp');
+    
+    showToast(
+      `${t('invite_sent') || 'Invite sent'}: ${channels.join(' & ')}`,
+      'success',
+      4000
+    );
+  } else if (sendEmail || sendWhatsApp) {
+    showToast(t('invite_failed') || 'Failed to send invites. Administrator created but invites not sent.', 'warning', 5000);
+  }
+}
 
 /**
  * View administrator details in modal
@@ -475,12 +713,8 @@ window.viewAdminDetails = async function(adminId) {
       }
     });
 
-    const modalHtml = `
+    const modalContent = `
       <div style="max-width: 600px">
-        <h3 style="margin-bottom: 20px">
-          <i class="fas fa-user-shield"></i> ${t('administrator_details') || 'Administrator Details'}
-        </h3>
-
         <div style="display: grid; gap: 15px">
           <div>
             <div class="label">${t('name') || 'Name'}</div>
@@ -515,16 +749,17 @@ window.viewAdminDetails = async function(adminId) {
             ${permissionsHtml}
           </div>
         </div>
-
-        <div style="margin-top: 20px; text-align: right">
-          <button class="btn neon-btn-outline" onclick="closeModal()">
-            ${t('close') || 'Close'}
-          </button>
-        </div>
       </div>
     `;
 
-    createModal(modalHtml);
+    const modalTitle = `<i class="fas fa-user-shield"></i> ${t('administrator_details') || 'Administrator Details'}`;
+    const modalButtons = `
+      <button class="btn neon-btn-outline" onclick="closeModal()">
+        ${t('close') || 'Close'}
+      </button>
+    `;
+
+    createModal(modalTitle, modalContent, modalButtons);
   } catch (error) {
     console.error('Error loading admin details:', error);
     showToast(t('error_loading_admin') || 'Failed to load administrator details', 'error');
@@ -549,12 +784,8 @@ window.editAdminModal = async function(adminId) {
 
     const admin = adminSnap.data();
     
-    const modalHtml = `
+    const modalContent = `
       <div style="max-width: 800px; margin: 0 auto">
-        <h3 style="margin-bottom: 20px">
-          <i class="fas fa-edit"></i> ${t('edit_administrator') || 'Edit Administrator'}
-        </h3>
-
         <input type="hidden" id="editAdminId" value="${escapeHtml(adminId)}">
 
         <div class="form-group">
@@ -598,19 +829,20 @@ window.editAdminModal = async function(adminId) {
             ${renderEditPermissionsCheckboxes(admin.permissions)}
           </div>
         </div>
-
-        <div class="form-actions" style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px">
-          <button type="button" class="btn neon-btn-outline" onclick="closeModal()">
-            ${t('cancel') || 'Cancel'}
-          </button>
-          <button type="button" class="btn neon-btn" onclick="saveAdministratorEdits()">
-            <i class="fas fa-save"></i> ${t('save_changes') || 'Save Changes'}
-          </button>
-        </div>
       </div>
     `;
 
-    createModal(modalHtml);
+    const modalTitle = `<i class="fas fa-edit"></i> ${t('edit_administrator') || 'Edit Administrator'}`;
+    const modalButtons = `
+      <button type="button" class="btn neon-btn-outline" onclick="closeModal()">
+        ${t('cancel') || 'Cancel'}
+      </button>
+      <button type="button" class="btn neon-btn" onclick="saveAdministratorEdits()">
+        <i class="fas fa-save"></i> ${t('save_changes') || 'Save Changes'}
+      </button>
+    `;
+
+    createModal(modalTitle, modalContent, modalButtons);
   } catch (error) {
     console.error('Error loading admin for edit:', error);
     showToast(t('error_loading_admin') || 'Failed to load administrator', 'error');
@@ -666,20 +898,27 @@ window.handleEditRoleChange = function(roleId) {
  * Save administrator edits
  */
 window.saveAdministratorEdits = async function() {
-  const adminId = document.getElementById('editAdminId')?.value;
-  const name = document.getElementById('editAdminName')?.value.trim();
-  const status = document.getElementById('editAdminStatus')?.value;
-  const role = document.getElementById('editAdminRole')?.value;
-
   const t = window.t || ((key) => key);
+  
+  // Query within the visible modal to avoid stale DOM elements
+  const modal = document.querySelector('.modal-overlay .modal');
+  if (!modal) {
+    showToast('Modal not found', 'error');
+    return;
+  }
+  
+  const adminId = modal.querySelector('#editAdminId')?.value;
+  const name = modal.querySelector('#editAdminName')?.value?.trim() || '';
+  const status = modal.querySelector('#editAdminStatus')?.value;
+  const role = modal.querySelector('#editAdminRole')?.value;
 
   if (!name || name.length < 2) {
     showToast(t('name_required') || 'Name is required (min 2 characters)', 'error');
     return;
   }
 
-  // Get selected permissions
-  const permissionCheckboxes = document.querySelectorAll('.permission-checkbox:checked');
+  // Get selected permissions (query within modal)
+  const permissionCheckboxes = modal.querySelectorAll('.permission-checkbox:checked');
   const permissions = Array.from(permissionCheckboxes).map(cb => cb.value);
 
   if (permissions.length === 0) {

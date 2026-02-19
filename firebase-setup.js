@@ -1,5 +1,12 @@
 // Run this once in browser console to set up Firebase collections
 
+// ⚠️ SECURITY NOTE:
+// This file is intentionally a template. Do not commit real credentials or default passwords.
+
+const SUPER_ADMIN_EMAIL = "your-super-admin@example.com";
+const SUPER_ADMIN_PASSWORD = "CHANGE_ME";
+const TEST_EC_PASSWORD = "CHANGE_ME";
+
 const firebaseConfig = {
     apiKey: "AIzaSyBNuIYfcsi2NWkK1Ua4Tnycaf_qM3oix1s",
     authDomain: "neon-voting-app.firebaseapp.com",
@@ -18,13 +25,13 @@ const db = firebase.firestore();
 async function setupSuperAdmin() {
     try {
         await db.collection("meta").doc("superAdmin").set({
-            password: "admin123",
+            password: SUPER_ADMIN_PASSWORD,
             createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-            email: "david.gabion@regent.edu.gh"
+            email: SUPER_ADMIN_EMAIL
         });
         console.log("✅ Super Admin created");
-        console.log("📧 Email: david.gabion@regent.edu.gh");
-        console.log("🔑 Password: admin123");
+        console.log("📧 Email:", SUPER_ADMIN_EMAIL);
+        console.log("🔑 Password:", SUPER_ADMIN_PASSWORD);
     } catch (error) {
         console.error("❌ Error:", error);
     }
@@ -39,7 +46,7 @@ async function createTestOrg() {
             id: orgId,
             name: "Test University Elections 2024",
             description: "Annual student council elections",
-            ecPassword: "test123",
+            ecPassword: TEST_EC_PASSWORD,
             voterCount: 0,
             voteCount: 0,
             electionStatus: 'active',
@@ -48,7 +55,7 @@ async function createTestOrg() {
         });
         
         console.log(`✅ Test organization created: ${orgId}`);
-        console.log(`🔑 EC Password: test123`);
+        console.log(`🔑 EC Password: ${TEST_EC_PASSWORD}`);
     } catch (error) {
         console.error("❌ Error:", error);
     }

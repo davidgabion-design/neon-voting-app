@@ -11,6 +11,7 @@ import {
   onSnapshot 
 } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js';
 import { showToast, showQuickLoading, renderError } from '../utils/ui-helpers.js';
+import { applyTranslations } from '../utils/i18n.js';
 
 /**
  * Initialize dashboard with real-time updates
@@ -41,6 +42,12 @@ export async function initializeDashboard() {
       }, 250);
     }, (err) => {
       console.error("Dashboard snapshot error:", err);
+      // ✅ IMPROVED: Check if it's a transient connection error
+      if (err.code === 'unavailable' || err.code === 'failed-precondition') {
+        console.warn('Firestore temporarily unavailable, will retry...');
+        // Don't show error UI for transient issues
+        return;
+      }
       renderError('superContent-dashboard', 'Dashboard listener failed: ' + err.message, 'window.refreshDashboard');
     });
     
@@ -108,6 +115,9 @@ export async function loadDashboardData(snapshot = null) {
     html += renderDashboardTables(orgs, metrics);
     
     el.innerHTML = html;
+    
+    // Apply translations to dynamically generated content
+    applyTranslations();
     
     // Add interactive listeners
     setupDashboardInteractions();
@@ -288,7 +298,7 @@ function renderDashboardStats(metrics) {
           <i class="fas fa-building"></i>
         </div>
         <div class="stat-value" style="font-size:36px;font-weight:bold;color:#fff;margin-bottom:4px">${metrics.totalOrgs}</div>
-        <div class="stat-label subtext">Total Organizations</div>
+        <div class="stat-label subtext" data-i18n="total_organizations">TOTAL ORGANIZATIONS</div>
       </div>
       
       <!-- Active Elections -->
@@ -297,7 +307,7 @@ function renderDashboardStats(metrics) {
           <i class="fas fa-vote-yea"></i>
         </div>
         <div class="stat-value" style="font-size:36px;font-weight:bold;color:#fff;margin-bottom:4px">${metrics.activeElections}</div>
-        <div class="stat-label subtext">Active Elections</div>
+        <div class="stat-label subtext" data-i18n="active_elections">ACTIVE ELECTIONS</div>
       </div>
       
       <!-- Scheduled Elections -->
@@ -306,7 +316,7 @@ function renderDashboardStats(metrics) {
           <i class="fas fa-calendar-alt"></i>
         </div>
         <div class="stat-value" style="font-size:36px;font-weight:bold;color:#fff;margin-bottom:4px">${metrics.scheduledElections}</div>
-        <div class="stat-label subtext">Scheduled Elections</div>
+        <div class="stat-label subtext" data-i18n="scheduled_elections">SCHEDULED ELECTIONS</div>
       </div>
       
       <!-- Declared Results -->
@@ -315,7 +325,7 @@ function renderDashboardStats(metrics) {
           <i class="fas fa-trophy"></i>
         </div>
         <div class="stat-value" style="font-size:36px;font-weight:bold;color:#fff;margin-bottom:4px">${metrics.declaredElections}</div>
-        <div class="stat-label subtext">Declared Results</div>
+        <div class="stat-label subtext" data-i18n="declared_results">DECLARED RESULTS</div>
       </div>
       
       <!-- Total Voters -->
@@ -324,7 +334,7 @@ function renderDashboardStats(metrics) {
           <i class="fas fa-users"></i>
         </div>
         <div class="stat-value" style="font-size:36px;font-weight:bold;color:#fff;margin-bottom:4px">${metrics.totalVoters.toLocaleString()}</div>
-        <div class="stat-label subtext">Total Voters</div>
+        <div class="stat-label subtext" data-i18n="total_voters">TOTAL VOTERS</div>
       </div>
       
       <!-- Total Votes -->
@@ -333,7 +343,7 @@ function renderDashboardStats(metrics) {
           <i class="fas fa-check-circle"></i>
         </div>
         <div class="stat-value" style="font-size:36px;font-weight:bold;color:#fff;margin-bottom:4px">${metrics.totalVotes.toLocaleString()}</div>
-        <div class="stat-label subtext">Total Votes Cast</div>
+        <div class="stat-label subtext" data-i18n="total_votes_cast">TOTAL VOTES CAST</div>
       </div>
       
       <!-- Approved Elections -->
@@ -342,7 +352,7 @@ function renderDashboardStats(metrics) {
           <i class="fas fa-check-double"></i>
         </div>
         <div class="stat-value" style="font-size:36px;font-weight:bold;color:#fff;margin-bottom:4px">${metrics.approvedElections}</div>
-        <div class="stat-label subtext">Approved Elections</div>
+        <div class="stat-label subtext" data-i18n="approved_elections">APPROVED ELECTIONS</div>
       </div>
       
       <!-- Average Participation -->
@@ -351,7 +361,7 @@ function renderDashboardStats(metrics) {
           <i class="fas fa-chart-line"></i>
         </div>
         <div class="stat-value" style="font-size:36px;font-weight:bold;color:#fff;margin-bottom:4px">${metrics.avgParticipation}%</div>
-        <div class="stat-label subtext">Avg Participation</div>
+        <div class="stat-label subtext" data-i18n="avg_participation">AVG PARTICIPATION</div>
       </div>
     </div>
 
@@ -359,29 +369,29 @@ function renderDashboardStats(metrics) {
     <div class="card" style="margin-bottom:20px;padding:20px">
       <h4 style="margin:0 0 8px;color:#00eaff">
         <i class="fas fa-circle-info"></i>
-        Guidance Views
+        <span data-i18n="guidance_views">Guidance Views</span>
       </h4>
 
-      <div class="subtext" style="margin-bottom:16px">How many users viewed guidance before login</div>
+      <div class="subtext" style="margin-bottom:16px" data-i18n="guidance_views_desc">How many users viewed guidance before login</div>
 
       <div id="guidanceStatsContainer" style="display:flex;gap:16px;flex-wrap:wrap">
         <div style="text-align:center;padding:12px;background:rgba(0,234,255,0.05);border-radius:8px;flex:1;min-width:120px">
           <div style="font-size:32px;font-weight:bold;color:#fff" id="guidanceTotal">
             <i class="fas fa-spinner fa-spin"></i>
           </div>
-          <div class="subtext">Total Views</div>
+          <div class="subtext" data-i18n="total_views">Total Views</div>
         </div>
         <div style="text-align:center;padding:12px;background:rgba(0,234,255,0.05);border-radius:8px;flex:1;min-width:120px">
           <div style="font-size:24px;font-weight:bold;color:#00eaff" id="guidanceGateway">0</div>
-          <div class="subtext">From Gateway</div>
+          <div class="subtext" data-i18n="from_gateway">From Gateway</div>
         </div>
         <div style="text-align:center;padding:12px;background:rgba(0,234,255,0.05);border-radius:8px;flex:1;min-width:120px">
           <div style="font-size:24px;font-weight:bold;color:#ffa500" id="guidanceEC">0</div>
-          <div class="subtext">From EC Login</div>
+          <div class="subtext" data-i18n="from_ec_login">From EC Login</div>
         </div>
         <div style="text-align:center;padding:12px;background:rgba(0,234,255,0.05);border-radius:8px;flex:1;min-width:120px">
           <div style="font-size:24px;font-weight:bold;color:#0f0" id="guidanceVoter">0</div>
-          <div class="subtext">From Voter Login</div>
+          <div class="subtext" data-i18n="from_voter_login">From Voter Login</div>
         </div>
       </div>
     </div>
@@ -395,27 +405,27 @@ function renderDashboardCharts(orgs) {
   // Simplified - no async needed, charts are future enhancement
   return `
     <div class="card" style="margin-bottom:20px;padding:20px">
-      <h4 style="margin:0 0 16px;color:#00eaff"><i class="fas fa-chart-pie"></i> Election Analytics</h4>
+      <h4 style="margin:0 0 16px;color:#00eaff"><i class="fas fa-chart-pie"></i> <span data-i18n="election_analytics">Election Analytics</span></h4>
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;text-align:center">
         <div>
           <div style="font-size:32px;color:#0f0;margin-bottom:8px"><i class="fas fa-check-circle"></i></div>
           <div style="font-size:24px;font-weight:bold;color:#fff">${orgs.filter(o => !o.isDeleted && o.electionStatus === 'active').length}</div>
-          <div class="subtext">Active Elections</div>
+          <div class="subtext" data-i18n="active_elections_label">Active Elections</div>
         </div>
         <div>
           <div style="font-size:32px;color:#ffa500;margin-bottom:8px"><i class="fas fa-clock"></i></div>
           <div style="font-size:24px;font-weight:bold;color:#fff">${orgs.filter(o => !o.isDeleted && o.electionStatus === 'scheduled').length}</div>
-          <div class="subtext">Scheduled</div>
+          <div class="subtext" data-i18n="scheduled">Scheduled</div>
         </div>
         <div>
           <div style="font-size:32px;color:#ff00ff;margin-bottom:8px"><i class="fas fa-trophy"></i></div>
           <div style="font-size:24px;font-weight:bold;color:#fff">${orgs.filter(o => !o.isDeleted && o.electionStatus === 'declared').length}</div>
-          <div class="subtext">Declared Results</div>
+          <div class="subtext" data-i18n="declared_results_label">Declared Results</div>
         </div>
         <div>
           <div style="font-size:32px;color:#0f0;margin-bottom:8px"><i class="fas fa-thumbs-up"></i></div>
           <div style="font-size:24px;font-weight:bold;color:#fff">${orgs.filter(o => !o.isDeleted && o.approval?.status === 'approved').length}</div>
-          <div class="subtext">Approved</div>
+          <div class="subtext" data-i18n="approved_label">Approved</div>
         </div>
       </div>
     </div>
@@ -431,18 +441,18 @@ function renderDashboardTables(orgs, metrics) {
   
   let html = `
     <div class="card" style="padding:20px">
-      <h4 style="margin:0 0 16px;color:#00eaff"><i class="fas fa-list"></i> Elections Overview</h4>
+      <h4 style="margin:0 0 16px;color:#00eaff"><i class="fas fa-list"></i> <span data-i18n="elections_overview">Elections Overview</span></h4>
       <div class="table-responsive">
         <table class="data-table">
           <thead>
             <tr>
-              <th>Organization</th>
-              <th>Status</th>
-              <th>Approval</th>
-              <th>Voters</th>
-              <th>Votes</th>
-              <th>Participation</th>
-              <th>Actions</th>
+              <th data-i18n="organization">Organization</th>
+              <th data-i18n="status">Status</th>
+              <th data-i18n="approval">Approval</th>
+              <th data-i18n="voters">Voters</th>
+              <th data-i18n="votes">Votes</th>
+              <th data-i18n="participation">Participation</th>
+              <th data-i18n="actions">Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -453,7 +463,7 @@ function renderDashboardTables(orgs, metrics) {
       <tr>
         <td colspan="7" style="text-align:center;padding:40px;color:#999">
           <i class="fas fa-inbox" style="font-size:48px;opacity:0.3;margin-bottom:16px;display:block"></i>
-          No elections found
+          <span data-i18n="no_elections_found">No elections found</span>
         </td>
       </tr>
     `;
@@ -475,8 +485,8 @@ function renderDashboardTables(orgs, metrics) {
       html += `
         <tr>
           <td><strong>${election.name || election.id}</strong></td>
-          <td style="${statusColors[election.status] || ''}">${election.status.toUpperCase()}</td>
-          <td style="${approvalColors[election.approval] || ''}">${election.approval.toUpperCase()}</td>
+          <td style="${statusColors[election.status] || ''}"><span data-i18n="status_${election.status}">${election.status.toUpperCase()}</span></td>
+          <td style="${approvalColors[election.approval] || ''}"><span data-i18n="approval_${election.approval}">${election.approval.toUpperCase()}</span></td>
           <td>${election.voters.toLocaleString()}</td>
           <td>${election.votes.toLocaleString()}</td>
           <td>
@@ -489,7 +499,7 @@ function renderDashboardTables(orgs, metrics) {
           </td>
           <td>
             <button class="btn neon-btn-outline" onclick="window.viewOrgDetails('${election.id}')" style="padding:4px 12px;font-size:12px">
-              <i class="fas fa-eye"></i> View
+              <i class="fas fa-eye"></i> <span data-i18n="view">View</span>
             </button>
           </td>
         </tr>

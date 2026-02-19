@@ -20,6 +20,11 @@ export async function loadECCandidates() {
   // Get translation function
   const t = window.t || ((key) => key);
   
+  // Check if editing is locked
+  const editLocked = window.currentOrgData && (window.currentOrgData.approval?.status === 'pending' || window.currentOrgData.approval?.status === 'approved');
+  const lockChip = editLocked ? '<i class="fas fa-lock" style="margin-left:4px;opacity:0.7;font-size:12px" title="Editing locked"></i>' : '';
+  const lockStyle = editLocked ? 'opacity:0.6;cursor:not-allowed;' : '';
+  
   showQuickLoading("ecContent-candidates", "Loading Candidates");
   
   try {
@@ -45,8 +50,8 @@ export async function loadECCandidates() {
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
         <h3><i class="fas fa-user-friends"></i> ${t('candidates')} (${candidates.length})</h3>
         <div style="display:flex;gap:8px">
-          <button class="btn neon-btn" onclick="showAddCandidateModal()">
-            <i class="fas fa-user-plus"></i> ${t('add_candidate')}
+          <button class="btn neon-btn" onclick="showAddCandidateModal()" style="${lockStyle}" ${editLocked ? 'disabled' : ''}>
+            <i class="fas fa-user-plus"></i> ${t('add_candidate')}${lockChip}
           </button>
           <button class="btn neon-btn-outline" onclick="exportCandidatesCSV()">
             <i class="fas fa-file-csv"></i> ${t('csv')}
@@ -91,8 +96,8 @@ export async function loadECCandidates() {
                 <i class="fas fa-users"></i> ${pos.name}
                 <span class="subtext">(${posCandidates.length} candidates)</span>
               </h4>
-              <button class="btn neon-btn-outline" onclick="showAddCandidateForPositionModal('${pos.id}', '${escapeHtml(pos.name)}')">
-                <i class="fas fa-user-plus"></i> Add to ${pos.name}
+              <button class="btn neon-btn-outline" onclick="showAddCandidateForPositionModal('${pos.id}', '${escapeHtml(pos.name)}')" style="${lockStyle}" ${editLocked ? 'disabled' : ''}>
+                <i class="fas fa-user-plus"></i> Add to ${pos.name}${editLocked ? lockChip : ''}
               </button>
             </div>
         `;
@@ -110,11 +115,11 @@ export async function loadECCandidates() {
                 </div>
               </div>
               <div style="display:flex;gap:8px">
-                <button class="btn neon-btn-outline" onclick="editCandidateModal('${c.id}')" title="Edit">
-                  <i class="fas fa-edit"></i>
+                <button class="btn neon-btn-outline" onclick="editCandidateModal('${c.id}')" title="${editLocked ? 'Editing locked' : 'Edit'}" style="${lockStyle}" ${editLocked ? 'disabled' : ''}>
+                  <i class="fas fa-edit"></i>${editLocked ? lockChip : ''}
                 </button>
-                <button class="btn btn-danger" onclick="deleteCandidateConfirm('${c.id}', '${escapeHtml(c.name)}')" title="Delete">
-                  <i class="fas fa-trash"></i>
+                <button class="btn btn-danger" onclick="deleteCandidateConfirm('${c.id}', '${escapeHtml(c.name)}')" title="${editLocked ? 'Editing locked' : 'Delete'}" style="${lockStyle}" ${editLocked ? 'disabled' : ''}>
+                  <i class="fas fa-trash"></i>${editLocked ? lockChip : ''}
                 </button>
               </div>
             </div>

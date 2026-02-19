@@ -243,7 +243,7 @@ For SMS functionality:
 
 - `TWILIO_ACCOUNT_SID` - Twilio account ID
 - `TWILIO_AUTH_TOKEN` - Twilio authentication token
-- `TWILIO_PHONE_NUMBER` - Sender phone number for SMS
+- `TWILIO_SENDER_E164` - Sender number for SMS + WhatsApp (E.164)
 
 For Email functionality:
 

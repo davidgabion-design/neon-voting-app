@@ -99,16 +99,15 @@ window.validateVoterOTP = async function(orgId, voterDocId) {
       sessionStorage.setItem('voterOrgId', orgId);
       sessionStorage.setItem('voterData', JSON.stringify(voterData));
       
-      await writeAudit({
-        type: 'voter_login',
-        orgId: orgId,
-        voterName: voterData.name,
-        message: 'Voter logged in via OTP'
-      });
+      await writeAudit(
+        orgId,
+        'voter_login',
+        voterData.name || voterDocId,
+        { message: 'Voter logged in via OTP' }
+      );
       
-      setTimeout(() => {
-        loadVotingBallot();
-      }, 1000);
+      showScreen('votingScreen');
+      await loadVotingBallot(orgId);
       
     } catch (loginErr) {
       showToast('Login error: ' + loginErr.message, 'error');
@@ -165,7 +164,7 @@ import {
   buildVoterDocIdFromCredential 
 } from '../utils/validation.js';
 import { showToast, showScreen, createModal } from '../utils/ui-helpers.js';
-import { saveSession } from '../utils/session.js';
+import { updateSession } from '../utils/session.js';
 import { writeAudit } from '../features/audit.js';
 import { loadVotingBallot } from './voting.js';
 import { showVoterLiveDashboard } from './results.js';
@@ -173,7 +172,6 @@ import { getCredentialType, validateCredential, buildVoterDocId } from '../confi
 
 // Module state
 let voterSession = null;
-let session = {};
 
 /**
  * Updates the voter login screen with dynamic credential fields
@@ -320,6 +318,12 @@ export async function updateVoterLoginScreen() {
             <button class="btn neon-btn-outline" onclick="window.showVoterHelpModal()">
               <i class="fas fa-question-circle"></i> Voting Help
             </button>
+          </div>
+        </div>
+
+        <div class="login-footer" style="text-align:center;padding:12px;border-top:1px solid rgba(255,255,255,0.1);margin-top:10px">
+          <div id="voterLoginDateTime" class="subtext" style="font-size:12px;color:rgba(255,255,255,0.6)">
+            <i class="fas fa-clock"></i> <span id="voterLoginDateTimeText"></span>
           </div>
         </div>
       </div>
@@ -655,17 +659,16 @@ export async function loginVoterWithCredential() {
     sessionStorage.setItem('voterOrgId', orgId);
     sessionStorage.setItem('voterData', JSON.stringify(voterData));
     
-    await writeAudit({
-      type: 'voter_login',
-      orgId: orgId,
-      voterName: voterData.name,
-      message: `Voter logged in using ${credType.primaryLabel}`
-    });
+    await writeAudit(
+      orgId,
+      'voter_login',
+      voterData.name || voterDocId,
+      { message: `Voter logged in using ${credType.primaryLabel}` }
+    );
     
     // Load voting ballot
-    setTimeout(() => {
-      loadVotingBallot();
-    }, 1000);
+    showScreen('votingScreen');
+    await loadVotingBallot(orgId);
     
   } catch (error) {
     console.error('Login error:', error);
@@ -880,8 +883,7 @@ export async function loginVoterOrgCredential() {
       startTime: new Date()
     };
 
-    session.voterSession = voterSession;
-    saveSession();
+    updateSession({ voterSession });
 
     await writeAudit(orgId, "VOTER_LOGIN", voterKey, { matchedBy: result.matchedBy });
 

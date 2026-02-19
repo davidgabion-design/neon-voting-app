@@ -61,10 +61,60 @@ export async function loadInviteTemplates() {
 export function getDefaultInviteTemplates() {
   return {
     voterSubject: "🗳️ You're Invited to Vote",
-    voterBody: "Hi {voterName}!\n\nYou're invited to vote in the {orgName} election.\n\nLogin Details:\n- Organization ID: {orgId}\n- Your Email: {email}\n\nVisit: {appUrl}\n\nVote securely and confidentially!",
+    voterBody: "Hi {voterName}!\n\nYou're invited to vote in the {orgName} election.\n\nLogin Details:\n- Organization ID: {orgId}\n- Your Email: {email}\n\nVisit: {appUrl}?role=voter&org={orgId}\n\nVote securely and confidentially!",
     ecSubject: "🔐 Election Commissioner Invitation",
-    ecBody: "Hi {ecName}!\n\nYou've been invited as Election Commissioner for {orgName}\n\nLogin Credentials:\n- Organization ID: {orgId}\n- Password: {password}\n\nVisit: {appUrl}\n\nPlease change your password after first login."
+    ecBody: "Hi {ecName}!\n\nYou've been invited as Election Commissioner for {orgName}\n\nLogin Credentials:\n- Organization ID: {orgId}\n- Password: {password}\n\nVisit: {appUrl}?role=ec&org={orgId}\n\nPlease change your password after first login."
   };
+}
+
+function replaceTemplateTokens(text, variables) {
+  if (!text) return "";
+  let result = String(text);
+  Object.entries(variables).forEach(([key, value]) => {
+    const token = `{${key}}`;
+    result = result.split(token).join(String(value ?? ""));
+  });
+  return result;
+}
+
+export function buildVoterInviteTemplate({ voterName, orgName, orgId, email, appUrl }) {
+  const defaults = getDefaultInviteTemplates();
+  const orgTemplates = window.currentOrgData?.inviteTemplates || {};
+  const subjectRaw = orgTemplates.voterSubject || defaults.voterSubject;
+  const bodyRaw = orgTemplates.voterBody || defaults.voterBody;
+  const variables = { voterName, orgName, orgId, email, appUrl };
+
+  return {
+    subject: replaceTemplateTokens(subjectRaw, variables),
+    body: replaceTemplateTokens(bodyRaw, variables)
+  };
+}
+
+export function buildECInviteTemplate({ ecName, orgName, orgId, password, appUrl }) {
+  const defaults = getDefaultInviteTemplates();
+  const orgTemplates = window.currentOrgData?.inviteTemplates || {};
+  const subjectRaw = orgTemplates.ecSubject || defaults.ecSubject;
+  const bodyRaw = orgTemplates.ecBody || defaults.ecBody;
+  const variables = { ecName, orgName, orgId, password, appUrl };
+
+  return {
+    subject: replaceTemplateTokens(subjectRaw, variables),
+    body: replaceTemplateTokens(bodyRaw, variables)
+  };
+}
+
+export function buildVoterSmsInviteMessage({ voterName, orgName, orgId, appUrl }) {
+  return `Hi ${voterName}! You're invited to vote in ${orgName} election. Visit: ${appUrl}?role=voter&org=${orgId} Org ID: ${orgId} 🗳️`;
+}
+
+export function buildVoterSmsAlertMessage({ voterName, orgName, orgId, appUrl, alertType }) {
+  const baseLink = `${appUrl}?role=voter&org=${orgId}`;
+
+  if (alertType === 'start') {
+    return `🗳️ Hi ${voterName}! Voting is NOW OPEN for ${orgName}! Visit: ${baseLink} Org ID: ${orgId} Cast your vote now! ✅`;
+  }
+
+  return `⏰ Hi ${voterName}! Voting for ${orgName} starts in 30 minutes. Visit: ${baseLink} Org ID: ${orgId} 🗳️`;
 }
 
 /**

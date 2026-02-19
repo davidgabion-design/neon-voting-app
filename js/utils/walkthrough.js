@@ -13,7 +13,7 @@ export function showTip(targetId, text, duration = 5000) {
   const el = document.getElementById(targetId);
   if (!el) {
     console.warn(`Tooltip target not found: ${targetId}`);
-    return;
+    return false;
   }
 
   // Remove any existing tooltips
@@ -144,8 +144,10 @@ export function showVoterWalkthrough() {
   if (voterWalkthroughSeen) return;
 
   setTimeout(() => {
-    showTip('votingBallot', 'Select your preferred candidate for each position, then submit your vote at the bottom.', 8000);
-    localStorage.setItem('neon_voter_walkthrough_seen', 'true');
+    const attached = showTip('votingBallot', 'Select your preferred candidate for each position, then submit your vote at the bottom.', 8000);
+    if (attached !== false) {
+      localStorage.setItem('neon_voter_walkthrough_seen', 'true');
+    }
   }, 1500);
 }
 

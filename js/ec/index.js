@@ -57,3 +57,6 @@ export {
   generatePublicLink,
   copyPublicLink
 } from './settings.js';
+
+// Support & Communication
+import './support.js';

@@ -9,6 +9,7 @@ import { showToast, showQuickLoading, renderError, getDefaultLogo } from '../uti
 import { escapeHtml } from '../utils/validation.js';
 import { loadSuperOrganizationsEnhanced } from './organizations.js';
 import { logActivity, logAudit } from '../utils/activity.js';
+import { applyTranslations } from '../utils/i18n.js';
 
 /**
  * Helper: Calculate SLA badge for approval requests
@@ -81,26 +82,26 @@ export async function loadSuperApprovals() {
     
     let html = `
       <div style="margin-bottom:20px">
-        <h3><i class="fas fa-clipboard-check"></i> Election Approvals</h3>
+        <h3><i class="fas fa-clipboard-check"></i> <span data-i18n="election_approvals">Election Approvals</span></h3>
         <div style="display:flex;gap:15px;margin-top:10px">
           <div class="card" style="flex:1;text-align:center;background:rgba(255,193,7,0.05);border:1px solid rgba(255,193,7,0.2);">
             <div style="font-size:24px;color:#ffc107;font-weight:bold">${pendingOrgs.length}</div>
-            <div style="font-size:12px;color:#ffc107">Pending</div>
+            <div style="font-size:12px;color:#ffc107" data-i18n="pending_label">Pending</div>
           </div>
           <div class="card" style="flex:1;text-align:center;background:rgba(0,255,170,0.05);border:1px solid rgba(0,255,170,0.2);">
             <div style="font-size:24px;color:#00ffaa;font-weight:bold">${approvedOrgs.length}</div>
-            <div style="font-size:12px;color:#00ffaa">Approved</div>
+            <div style="font-size:12px;color:#00ffaa" data-i18n="approved_label">Approved</div>
           </div>
           <div class="card" style="flex:1;text-align:center;background:rgba(255,68,68,0.05);border:1px solid rgba(255,68,68,0.2);">
             <div style="font-size:24px;color:#ff4444;font-weight:bold">${rejectedOrgs.length}</div>
-            <div style="font-size:12px;color:#ff4444">Rejected</div>
+            <div style="font-size:12px;color:#ff4444" data-i18n="rejected_label">Rejected</div>
           </div>
         </div>
       </div>
       
       <div style="display:flex;gap:8px;margin-bottom:15px">
         <button class="btn neon-btn-outline" onclick="window.loadSuperApprovals()">
-          <i class="fas fa-redo"></i> Refresh
+          <i class="fas fa-redo"></i> <span data-i18n="refresh">Refresh</span>
         </button>
       </div>
     `;
@@ -109,8 +110,8 @@ export async function loadSuperApprovals() {
       html += `
         <div class="card empty-state">
           <i class="fas fa-clipboard-check"></i>
-          <h4>No Approval Requests</h4>
-          <p class="subtext">No organizations have requested approval yet.</p>
+          <h4 data-i18n="no_approval_requests">No Approval Requests</h4>
+          <p class="subtext" data-i18n="no_approval_requests_desc">No organizations have requested approval yet.</p>
         </div>
       `;
     } else {
@@ -119,7 +120,7 @@ export async function loadSuperApprovals() {
         html += `
           <div class="card" style="margin-bottom:20px;border-left:4px solid #ffc107;">
             <h4 style="color:#ffc107;margin-bottom:15px">
-              <i class="fas fa-hourglass-half"></i> Pending Approvals (${pendingOrgs.length})
+              <i class="fas fa-hourglass-half"></i> <span data-i18n="pending_approvals_count">Pending Approvals</span> (${pendingOrgs.length})
             </h4>
         `;
         
@@ -142,13 +143,13 @@ export async function loadSuperApprovals() {
                     <strong style="color:#fff">${escapeHtml(org.name || org.id)}</strong>
                     <div class="subtext" style="margin-top:2px">ID: ${org.id}</div>
                     <div style="display:flex;gap:15px;margin-top:4px">
-                      <span class="subtext" style="color:#00eaff"><i class="fas fa-users"></i> ${voterCount} voters</span>
-                      <span class="subtext" style="color:#9beaff"><i class="fas fa-check-circle"></i> ${voteCount} votes</span>
-                      <span class="subtext" style="color:#9beaff"><i class="fas fa-trophy"></i> ${positionCount} positions</span>
-                      <span class="subtext" style="color:#9beaff"><i class="fas fa-user-tie"></i> ${candidateCount} candidates</span>
+                      <span class="subtext" style="color:#00eaff"><i class="fas fa-users"></i> ${voterCount} <span data-i18n="voters">voters</span></span>
+                      <span class="subtext" style="color:#9beaff"><i class="fas fa-check-circle"></i> ${voteCount} <span data-i18n="votes">votes</span></span>
+                      <span class="subtext" style="color:#9beaff"><i class="fas fa-trophy"></i> ${positionCount} <span data-i18n="positions">positions</span></span>
+                      <span class="subtext" style="color:#9beaff"><i class="fas fa-user-tie"></i> ${candidateCount} <span data-i18n="candidates">candidates</span></span>
                     </div>
                     <div class="subtext" style="margin-top:4px">
-                      <i class="fas fa-calendar"></i> Requested: ${requestedDate.toLocaleDateString()} ${requestedDate.toLocaleTimeString()}
+                      <i class="fas fa-calendar"></i> <span data-i18n="requested">Requested:</span> ${requestedDate.toLocaleDateString()} ${requestedDate.toLocaleTimeString()}
                       ${_slaBadge(requestedDate)}
                     </div>
                   </div>
@@ -165,16 +166,16 @@ export async function loadSuperApprovals() {
                   if (canApprove) {
                     return `
                       <button class="btn btn-approve" onclick="window.approveElection('${org.id}', '${escapeHtml(org.name || org.id)}')" style="white-space:nowrap">
-                        <i class="fas fa-check"></i> Approve
+                        <i class="fas fa-check"></i> <span data-i18n="approve">Approve</span>
                       </button>
                       <button class="btn neon-btn-outline" onclick="window.rejectElection('${org.id}', '${escapeHtml(org.name || org.id)}')" style="white-space:nowrap;border-color:#ff6666;color:#ffb3b3">
-                        <i class="fas fa-times"></i> Reject
+                        <i class="fas fa-times"></i> <span data-i18n="reject">Reject</span>
                       </button>
                     `;
                   } else {
                     return `
                       <span class="subtext" style="padding: 8px 12px; background: rgba(255,255,255,0.05); border-radius: 4px; white-space: nowrap;">
-                        <i class="fas fa-eye"></i> View Only
+                        <i class="fas fa-eye"></i> <span data-i18n="view_only">View Only</span>
                       </span>
                     `;
                   }
@@ -195,7 +196,7 @@ export async function loadSuperApprovals() {
         html += `
           <div class="card" style="margin-bottom:20px;border-left:4px solid #00ffaa;">
             <h4 style="color:#00ffaa;margin-bottom:15px">
-              <i class="fas fa-check-circle"></i> Approved Elections (${approvedOrgs.length})
+              <i class="fas fa-check-circle"></i> <span data-i18n="approved_elections">Approved Elections</span> (${approvedOrgs.length})
             </h4>
         `;
         
@@ -216,11 +217,11 @@ export async function loadSuperApprovals() {
                     <strong style="color:#fff">${escapeHtml(org.name || org.id)}</strong>
                     <div class="subtext" style="margin-top:2px">ID: ${org.id}</div>
                     <div style="display:flex;gap:15px;margin-top:4px">
-                      <span class="subtext" style="color:#00eaff"><i class="fas fa-users"></i> ${voterCount} voters</span>
-                      <span class="subtext" style="color:#0f0"><i class="fas fa-check-circle"></i> ${voteCount} votes cast</span>
+                      <span class="subtext" style="color:#00eaff"><i class="fas fa-users"></i> ${voterCount} <span data-i18n="voters">voters</span></span>
+                      <span class="subtext" style="color:#0f0"><i class="fas fa-check-circle"></i> ${voteCount} <span data-i18n="votes_cast">votes cast</span></span>
                     </div>
                     <div class="subtext" style="margin-top:4px">
-                      <i class="fas fa-check-circle"></i> Approved: ${approvedDate.toLocaleDateString()} by ${org.approval?.approvedBy || 'SuperAdmin'}
+                      <i class="fas fa-check-circle"></i> <span data-i18n="approved_by">Approved:</span> ${approvedDate.toLocaleDateString()} by ${org.approval?.approvedBy || 'SuperAdmin'}
                     </div>
                     ${org.approval?.comments ? `
                       <div class="subtext" style="margin-top:2px;color:#00eaff">
@@ -232,10 +233,10 @@ export async function loadSuperApprovals() {
               </div>
               <div style="display:flex;gap:8px;flex-wrap:nowrap">
                 <span class="badge success" style="white-space:nowrap">
-                  <i class="fas fa-check"></i> Approved
+                  <i class="fas fa-check"></i> <span data-i18n="approved_label">Approved</span>
                 </span>
                 <button class="btn btn-danger" onclick="window.revokeApproval('${org.id}', '${escapeHtml(org.name || org.id)}')" style="white-space:nowrap">
-                  <i class="fas fa-undo"></i> Revoke
+                  <i class="fas fa-undo"></i> <span data-i18n="revoke">Revoke</span>
                 </button>
               </div>
             </div>
@@ -250,7 +251,7 @@ export async function loadSuperApprovals() {
         html += `
           <div class="card" style="margin-bottom:20px;border-left:4px solid #ff4444;">
             <h4 style="color:#ff4444;margin-bottom:15px">
-              <i class="fas fa-times-circle"></i> Rejected Elections (${rejectedOrgs.length})
+              <i class="fas fa-times-circle"></i> <span data-i18n="rejected_elections">Rejected Elections</span> (${rejectedOrgs.length})
             </h4>
         `;
         
@@ -269,7 +270,7 @@ export async function loadSuperApprovals() {
                     <strong style="color:#fff">${escapeHtml(org.name || org.id)}</strong>
                     <div class="subtext" style="margin-top:2px">ID: ${org.id}</div>
                     <div class="subtext" style="margin-top:4px">
-                      <i class="fas fa-times-circle"></i> Rejected: ${rejectedDate.toLocaleDateString()} by ${org.approval?.rejectedBy || 'SuperAdmin'}
+                      <i class="fas fa-times-circle"></i> <span data-i18n="rejected_by">Rejected:</span> ${rejectedDate.toLocaleDateString()} by ${org.approval?.rejectedBy || 'SuperAdmin'}
                     </div>
                     ${org.approval?.rejectionReason ? `
                       <div class="subtext" style="margin-top:2px;color:#ff9999">
@@ -296,6 +297,7 @@ export async function loadSuperApprovals() {
     }
     
     el.innerHTML = html;
+    applyTranslations();
   } catch(e) { 
     console.error(e); 
     renderError("superApprovalList", "Error loading approval requests", "window.loadSuperApprovals()");
@@ -324,13 +326,62 @@ export async function approveElection(orgId, orgName = null) {
   
   const orgNameText = orgName ? ` "${orgName}"` : '';
   
-  if (!confirm(`Approve election for organization${orgNameText}? This will unlock voting.`)) return;
+  // Create approval confirmation modal
+  const modalHtml = `
+    <div id="approvalModal" class="modal-overlay" style="display:flex;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.8);z-index:9999;align-items:center;justify-content:center">
+      <div class="modal-content" style="background:#0a0e27;border-radius:12px;padding:30px;max-width:500px;width:90%;border:2px solid #00ffaa">
+        <h3 style="color:#00ffaa;margin-bottom:15px">
+          <i class="fas fa-check-circle"></i> Approve Election
+        </h3>
+        <p style="margin-bottom:10px">
+          You are about to approve election for:
+        </p>
+        <p style="font-weight:bold;color:#00eaff;margin-bottom:10px">
+          ${orgNameText.replace(/^"/, '').replace(/"$/, '')}
+        </p>
+        <p class="subtext" style="margin-bottom:20px">
+          <i class="fas fa-info-circle"></i> This will unlock voting and allow voters to cast their ballots.
+        </p>
+        <div style="margin-bottom:20px">
+          <label class="label">Optional Comments</label>
+          <textarea id="approvalComments" class="input" rows="3" placeholder="Add any comments for the EC (optional)..." style="resize:vertical"></textarea>
+        </div>
+        <div style="display:flex;gap:10px">
+          <button class="btn neon-btn-lg" onclick="window.confirmApproval('${orgId}')" style="flex:1">
+            <i class="fas fa-check"></i> Confirm Approval
+          </button>
+          <button class="btn neon-btn-outline" onclick="document.getElementById('approvalModal').remove()" style="flex:1">
+            <i class="fas fa-times"></i> Cancel
+          </button>
+        </div>
+      </div>
+    </div>
+  `;
+  
+  document.body.insertAdjacentHTML('beforeend', modalHtml);
+}
+
+/**
+ * Confirm approval (called from modal)
+ */
+window.confirmApproval = async function(orgId) {
+  const comments = document.getElementById('approvalComments')?.value?.trim() || '';
+  document.getElementById('approvalModal')?.remove();
   
   try {
+    const currentUser = window.currentAdmin || window.currentSuperAdmin;
     // Get existing approval data to preserve it
     const orgRef = doc(db, "organizations", orgId);
     const orgSnap = await getDoc(orgRef);
     const existingApproval = orgSnap.data()?.approval || {};
+    const existingHistory = existingApproval.history || [];
+    
+    // Append approval to history
+    const approvalEntry = {
+      status: 'approved',
+      reviewedAt: new Date().toISOString(),
+      reviewedBy: currentUser?.email || 'superadmin'
+    };
     
     // ✅ PATCH: unlock voting on approval
     await updateDoc(orgRef, {
@@ -338,16 +389,19 @@ export async function approveElection(orgId, orgName = null) {
         ...existingApproval,  // ✅ PRESERVE requestedAt, requestedBy, organizationName
         status: "approved",
         approvedAt: serverTimestamp(),
-        approvedBy: "superadmin"
+        approvedBy: "superadmin",
+        comments: comments || '',  // Add approval comments
+        history: [...existingHistory, approvalEntry]
       },
       electionStatus: 'active',
       updatedAt: serverTimestamp()
     });
     
     // ✅ PATCH: activity + audit logging
+    const orgName = orgSnap.data()?.name || orgId;
     await logActivity({
       type: 'approval_approved',
-      message: `Election approved for "${orgNameText}" - voting unlocked`,
+      message: `Election approved for "${orgName}" - voting unlocked`,
       orgId,
       actor: 'Super Admin',
       role: 'superadmin'
@@ -362,14 +416,14 @@ export async function approveElection(orgId, orgName = null) {
       after: { approval: 'approved', electionStatus: 'active' }
     });
     
-    showToast(`Election${orgNameText} approved successfully! ✅`, "success");
+    showToast(`Election "${orgName}" approved successfully! ✅`, "success");
     loadSuperOrganizationsEnhanced();
     loadSuperApprovals();
   } catch (e) {
     console.error("Approval error:", e);
     showToast("Approval failed: " + (e?.message || e), "error");
   }
-}
+};
 
 /**
  * Reject election
@@ -392,37 +446,93 @@ export async function rejectElection(orgId, orgName = null) {
   }
   
   const orgNameText = orgName ? ` "${orgName}"` : '';
-  const reason = prompt(`Enter reason for rejecting election${orgNameText}:\n\n(Minimum 5 characters required to provide meaningful feedback)`);
   
-  if (reason === null) return; // User cancelled
+  // Create rejection modal with reason textarea
+  const modalHtml = `
+    <div id="rejectionModal" class="modal-overlay" style="display:flex;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.8);z-index:9999;align-items:center;justify-content:center">
+      <div class="modal-content" style="background:#0a0e27;border-radius:12px;padding:30px;max-width:500px;width:90%;border:2px solid #ff6666">
+        <h3 style="color:#ff6666;margin-bottom:15px">
+          <i class="fas fa-times-circle"></i> Reject Election
+        </h3>
+        <p style="margin-bottom:10px">
+          You are about to reject election for:
+        </p>
+        <p style="font-weight:bold;color:#00eaff;margin-bottom:10px">
+          ${orgNameText.replace(/^"/, '').replace(/"$/, '')}
+        </p>
+        <p class="subtext" style="margin-bottom:20px">
+          <i class="fas fa-info-circle"></i> Please provide a clear reason so the EC can fix the issues and resubmit.
+        </p>
+        <div style="margin-bottom:20px">
+          <label class="label">Rejection Reason <span style="color:#ff6666">*</span></label>
+          <textarea id="rejectionReason" class="input" rows="4" placeholder="Explain why this election is being rejected (minimum 5 characters)..." style="resize:vertical"></textarea>
+          <div class="subtext" style="margin-top:5px">
+            <i class="fas fa-exclamation-triangle"></i> The EC will receive this feedback
+          </div>
+        </div>
+        <div style="display:flex;gap:10px">
+          <button class="btn neon-btn-lg" onclick="window.confirmRejection('${orgId}')" style="flex:1;background:#ff4444;border-color:#ff6666">
+            <i class="fas fa-times"></i> Confirm Rejection
+          </button>
+          <button class="btn neon-btn-outline" onclick="document.getElementById('rejectionModal').remove()" style="flex:1">
+            <i class="fas fa-undo"></i> Cancel
+          </button>
+        </div>
+      </div>
+    </div>
+  `;
   
-  // ✅ PATCH 4: Enhanced validation - minimum 5 characters
-  const trimmedReason = reason.trim();
-  if (!trimmedReason) {
+  document.body.insertAdjacentHTML('beforeend', modalHtml);
+  // Focus on textarea
+  setTimeout(() => document.getElementById('rejectionReason')?.focus(), 100);
+}
+
+/**
+ * Confirm rejection (called from modal)
+ */
+window.confirmRejection = async function(orgId) {
+  const reason = document.getElementById('rejectionReason')?.value?.trim() || '';
+  
+  // ✅ Validation - minimum 5 characters
+  if (!reason) {
     showToast("Please provide a rejection reason", "error");
     return;
   }
   
-  if (trimmedReason.length < 5) {
+  if (reason.length < 5) {
     showToast("Rejection reason must be at least 5 characters. Please provide meaningful feedback.", "error");
     return;
   }
   
+  document.getElementById('rejectionModal')?.remove();
+  
   try {
+    const currentUser = window.currentAdmin || window.currentSuperAdmin;
     // Get existing approval data to preserve it
     const orgRef = doc(db, "organizations", orgId);
     const orgSnap = await getDoc(orgRef);
     const existingApproval = orgSnap.data()?.approval || {};
+    const existingHistory = existingApproval.history || [];
+    const orgName = orgSnap.data()?.name || orgId;
     
-    // ✅ PATCH: lock election on rejection
+    // Append rejection to history
+    const rejectionEntry = {
+      status: 'rejected',
+      reviewedAt: new Date().toISOString(),
+      reviewedBy: currentUser?.email || 'superadmin',
+      reason: reason
+    };
+    
+    // ✅ PATCH: unlock election for editing after rejection
     await updateDoc(orgRef, {
       approval: {
         ...existingApproval,  // ✅ PRESERVE requestedAt, requestedBy, organizationName
         status: "rejected",
         rejectedAt: serverTimestamp(),
         rejectedBy: "superadmin",
-        rejectionReason: trimmedReason,
-        comment: trimmedReason // Store in both fields for consistency
+        rejectionReason: reason,
+        comment: reason, // Store in both fields for consistency
+        history: [...existingHistory, rejectionEntry]
       },
       electionStatus: 'draft',
       updatedAt: serverTimestamp()
@@ -431,7 +541,7 @@ export async function rejectElection(orgId, orgName = null) {
     // ✅ PATCH: activity + audit logging
     await logActivity({
       type: 'approval_rejected',
-      message: `Election rejected for "${orgNameText}" - reason: ${trimmedReason}`,
+      message: `Election rejected for "${orgName}" - reason: ${reason}`,
       orgId,
       actor: 'Super Admin',
       role: 'superadmin'
@@ -443,17 +553,43 @@ export async function rejectElection(orgId, orgName = null) {
       actor: 'Super Admin',
       role: 'superadmin',
       before: { approval: 'pending' },
-      after: { approval: 'rejected', reason: trimmedReason }
+      after: { approval: 'rejected', reason: reason }
     });
     
-    showToast(`Election${orgNameText} rejected`, "success");
+    // ✅ Send email notification to EC
+    try {
+      const ecEmail = orgSnap.data()?.ecEmail;
+      if (ecEmail) {
+        await fetch('/.netlify/functions/send-notification', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            notificationType: 'election_rejected',
+            recipientEmail: ecEmail,
+            recipientName: orgSnap.data()?.ecName || 'Election Commissioner',
+            orgId: orgId,
+            orgName: orgName,
+            variables: {
+              rejectionReason: reason
+            },
+            channels: ['email']
+          })
+        });
+        console.log('✅ Rejection notification sent to EC:', ecEmail);
+      }
+    } catch (notifyErr) {
+      console.warn('Failed to send rejection email to EC:', notifyErr.message);
+      // Don't fail the rejection if email fails
+    }
+    
+    showToast(`Election "${orgName}" rejected`, "success");
     loadSuperOrganizationsEnhanced();
     loadSuperApprovals();
   } catch (e) {
     console.error("Rejection error:", e);
     showToast("Rejection failed: " + e.message, "error");
   }
-}
+};
 
 /**
  * Revoke approval

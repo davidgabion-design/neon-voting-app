@@ -66,7 +66,7 @@ export async function loadVotingBallot(orgId) {
         </div>
       </div>
       
-      <div class="ballot-container">
+      <div class="ballot-container" id="votingBallot">
     `;
     
     if (positions.length === 0) {
@@ -158,13 +158,14 @@ export async function loadVotingBallot(orgId) {
             </div>
           `;
         } else {
+          const isMultiChoice = position.votingType === 'multiple' && (position.maxCandidates || 1) > 1;
           positionCandidates.forEach(candidate => {
             const photoUrl = candidate.photo || getDefaultAvatar(candidate.name);
             
             html += `
               <div class="candidate-card" data-candidate-id="${candidate.id}">
                 <div class="candidate-checkbox">
-                  <input type="radio" 
+                  <input type="${isMultiChoice ? 'checkbox' : 'radio'}" 
                          id="candidate-${candidate.id}" 
                          name="position-${position.id}" 
                          value="${candidate.id}"

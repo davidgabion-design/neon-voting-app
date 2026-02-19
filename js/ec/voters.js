@@ -14,6 +14,7 @@ import { formatPhoneForDisplay, formatDateForDisplay, formatFirestoreTimestamp }
 import { normalizePhoneNumber, normalizePhoneE164 } from '../utils/normalization.js';
 import { checkEditLock } from './utils.js';
 import { getCredentialType, validateCredential, buildVoterDocId } from '../config/credential-types.js';
+import { buildVoterInviteTemplate } from '../invites/templates.js';
 
 /**
  * Load and display all voters
@@ -36,15 +37,20 @@ export async function loadECVoters() {
     // Get translation function
     const t = window.t || ((key) => key);
     
+    // Check if editing is locked
+    const editLocked = window.currentOrgData && (window.currentOrgData.approval?.status === 'pending' || window.currentOrgData.approval?.status === 'approved');
+    const lockChip = editLocked ? '<i class="fas fa-lock" style="margin-left:4px;opacity:0.7;font-size:12px" title="Editing locked"></i>' : '';
+    const lockStyle = editLocked ? 'opacity:0.6;cursor:not-allowed;' : '';
+    
     let html = `
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
         <h3><i class="fas fa-users"></i> ${t('voters')} (${activeCount} ${t('active')}${replacedCount ? ` • ${replacedCount} ${t('replaced')}` : ""})</h3>
         <div style="display:flex;gap:8px">
-          <button class="btn neon-btn" onclick="showAddVoterModal()">
-            <i class="fas fa-user-plus"></i> ${t('add_voter')}
+          <button class="btn neon-btn" onclick="showAddVoterModal()" style="${lockStyle}" ${editLocked ? 'disabled' : ''}>
+            <i class="fas fa-user-plus"></i> ${t('add_voter')}${lockChip}
           </button>
-          <button class="btn neon-btn-outline" onclick="showBulkVoterModal()">
-            <i class="fas fa-users"></i> ${t('bulk_add')}
+          <button class="btn neon-btn-outline" onclick="showBulkVoterModal()" style="${lockStyle}" ${editLocked ? 'disabled' : ''}>
+            <i class="fas fa-users"></i> ${t('bulk_add')}${lockChip}
           </button>
           <button class="btn neon-btn-outline" onclick="refreshVoters()">
             <i class="fas fa-redo"></i>
@@ -137,14 +143,14 @@ export async function loadECVoters() {
               </div>
             </div>
             <div style="display:flex;gap:8px">
-              <button class="btn neon-btn-outline" onclick="editVoterModal('${escapeHtml(v.id)}')" title="Edit">
-                <i class="fas fa-edit"></i>
+              <button class="btn neon-btn-outline" onclick="editVoterModal('${escapeHtml(v.id)}')" title="${editLocked ? 'Editing locked' : 'Edit'}" style="${lockStyle}" ${editLocked ? 'disabled' : ''}>
+                <i class="fas fa-edit"></i>${editLocked ? lockChip : ''}
               </button>
               <button class="btn neon-btn-outline" onclick="showInviteMethodsMenu(event, '${escapeHtml(voterEmail)}', '${escapeHtml(voterPhone)}', '${escapeHtml(v.name || primaryValue)}')" title="Send Invite">
                 <i class="fas fa-paper-plane"></i> <i class="fas fa-chevron-down" style="font-size:10px;margin-left:2px"></i>
               </button>
-              <button class="btn btn-danger" onclick="removeVoter('${escapeHtml(v.id)}', '${escapeHtml(v.name || primaryValue)}')" title="Delete">
-                <i class="fas fa-trash"></i>
+              <button class="btn btn-danger" onclick="removeVoter('${escapeHtml(v.id)}', '${escapeHtml(v.name || primaryValue)}')" title="${editLocked ? 'Editing locked' : 'Delete'}" style="${lockStyle}" ${editLocked ? 'disabled' : ''}>
+                <i class="fas fa-trash"></i>${editLocked ? lockChip : ''}
               </button>
             </div>
           </div>
@@ -336,6 +342,15 @@ export async function addVoterWithCredential() {
     
     if (shouldAutoSend && voterEmail) {
       try {
+        const appUrl = (typeof window !== 'undefined' && window.APP_URL) ? window.APP_URL : window.location.origin;
+        const emailTemplate = buildVoterInviteTemplate({
+          voterName: name || "Voter",
+          orgName: window.currentOrgData?.name || window.currentOrgId,
+          orgId: window.currentOrgId,
+          email: voterEmail,
+          appUrl
+        });
+
         const response = await fetch("/.netlify/functions/send-invite", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -349,7 +364,8 @@ export async function addVoterWithCredential() {
               credential: primaryCredential, 
               type: credType.primaryField,
               label: credType.primaryLabel
-            }
+            },
+            emailTemplate
           })
         });
 
@@ -477,6 +493,15 @@ export async function addVoterWithEmailOrPhone() {
     const shouldAutoSend = document.getElementById('autoSendVoterInvite')?.checked && voterEmail;
     if (shouldAutoSend) {
       try {
+        const appUrl = (typeof window !== 'undefined' && window.APP_URL) ? window.APP_URL : window.location.origin;
+        const emailTemplate = buildVoterInviteTemplate({
+          voterName: name || "Voter",
+          orgName: window.currentOrgData?.name || window.currentOrgId,
+          orgId: window.currentOrgId,
+          email: voterEmail,
+          appUrl
+        });
+
         const response = await fetch("/.netlify/functions/send-invite", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -486,7 +511,8 @@ export async function addVoterWithEmailOrPhone() {
             orgName: window.currentOrgData?.name || window.currentOrgId,
             orgId: window.currentOrgId,
             recipientName: name,
-            credentials: { credential: voterEmail, type: 'email' }
+            credentials: { credential: voterEmail, type: 'email' },
+            emailTemplate
           })
         });
         
@@ -498,7 +524,7 @@ export async function addVoterWithEmailOrPhone() {
             const inviteRef = collection(db, "organizations", window.currentOrgId, "invites");
             await addDoc(inviteRef, {
               type: "voter",
-              email: voterEmail,
+              recipientEmail: voterEmail,
               name: name,
               sentAt: serverTimestamp(),
               status: "sent",

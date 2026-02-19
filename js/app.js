@@ -251,6 +251,43 @@ console.log('✅ Reports Module:', Object.keys(reports).length, 'exports');
 console.log('✅ Shared Module:', Object.keys(shared).length, 'exports');
 console.log('🎉 All 7 modules loaded successfully - 100% complete!');
 
+// ===== LOGIN PAGE DATE/TIME DISPLAY =====
+function updateLoginDateTime() {
+  const now = new Date();
+  const options = { 
+    weekday: 'short', 
+    year: 'numeric', 
+    month: 'short', 
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: true
+  };
+  const dateTimeString = now.toLocaleDateString('en-US', options);
+
+  // Update all login page date/time elements
+  const elements = [
+    'voterLoginDateTimeText',
+    'ecLoginDateTimeText', 
+    'adminLoginDateTimeText',
+    'superAdminLoginDateTimeText',
+    'publicResultsDateTimeText'
+  ];
+
+  elements.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = dateTimeString;
+  });
+}
+
+// Make function globally available
+window.updateLoginDateTime = updateLoginDateTime;
+
+// Start updating date/time every second
+setInterval(updateLoginDateTime, 1000);
+updateLoginDateTime(); // Initial call
+
 export default {
   // Core modules
   db,

@@ -36,8 +36,8 @@
     Referrer-Policy = "strict-origin-when-cross-origin"
     # Enforce HTTPS
     Strict-Transport-Security = "max-age=31536000; includeSubDomains; preload"
-    # Content Security Policy
-    Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.gstatic.com https://cdn.jsdelivr.net https://www.googletagmanager.com; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; img-src 'self' data: https://firebasestorage.googleapis.com https://www.googletagmanager.com; font-src 'self' https://cdnjs.cloudflare.com; connect-src 'self' https://*.firebaseio.com https://*.googleapis.com https://firebasestorage.googleapis.com https://www.google-analytics.com https://analytics.google.com; frame-ancestors 'none';"
+    # Content Security Policy - Updated to include Firebase CDN
+    Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.gstatic.com https://*.firebaseio.com https://apis.google.com https://cdn.jsdelivr.net https://www.googletagmanager.com; connect-src 'self' https://*.firebaseio.com https://*.googleapis.com https://firebasestorage.googleapis.com https://www.gstatic.com https://www.google-analytics.com https://analytics.google.com wss://*.firebaseio.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src 'self' data: https://fonts.gstatic.com https://cdnjs.cloudflare.com; img-src 'self' data: blob: https: https://firebasestorage.googleapis.com https://www.googletagmanager.com; frame-src 'none'; object-src 'none'; frame-ancestors 'none';"
     # Permissions Policy (formerly Feature-Policy)
     Permissions-Policy = "geolocation=(), microphone=(), camera=(), payment=()"
 

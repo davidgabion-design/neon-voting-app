@@ -75,7 +75,7 @@ export async function sendVoterInvite(voterEmail, voterName, voterPhone) {
     const inviteRef = collection(db, "organizations", window.currentOrgId, "invites");
     const newInvite = {
       type: "voter",
-      email: credential,
+      [credentialType === 'email' ? 'recipientEmail' : 'recipientPhone']: credential,
       name: voterName || "Voter",
       sentAt: serverTimestamp(),
       status: "sent",

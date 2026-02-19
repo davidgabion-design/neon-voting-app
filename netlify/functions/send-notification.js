@@ -425,336 +425,298 @@ async function logNotification(channel, notificationType, orgId, recipient, resu
  * glowing box shadows, and high-contrast text so they render well across all email clients.
  */
 
-/** Shared wrapper — dark full-page background */
-function wrapEmail(innerHtml, accentColor = '#00C3FF') {
-  return `
-<!DOCTYPE html>
-<html lang="en">
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
-<body style="margin:0;padding:0;background:#050816;font-family:Arial,Helvetica,sans-serif;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background:#050816;min-height:100vh;">
-    <tr>
-      <td align="center" style="padding:30px 16px;">
-        <!-- Card -->
-        <table width="100%" style="max-width:600px;background:#0a0f2e;border-radius:14px;border:1px solid ${accentColor};box-shadow:0 0 40px rgba(0,195,255,0.12),0 0 80px rgba(0,0,0,0.6);overflow:hidden;" cellpadding="0" cellspacing="0">
-          <!-- Top accent bar -->
-          <tr><td style="height:4px;background:linear-gradient(90deg,${accentColor},#9D00FF,${accentColor});"></td></tr>
-          <!-- Body -->
-          <tr><td style="padding:32px 36px 28px;">
-            ${innerHtml}
-          </td></tr>
-          <!-- Footer -->
-          <tr>
-            <td style="padding:16px 36px 20px;border-top:1px solid rgba(255,255,255,0.06);text-align:center;">
-              <p style="margin:0;font-size:11px;color:#3a4a6b;letter-spacing:0.5px;">
-                Neon Voting System &nbsp;|&nbsp; Secure Digital Elections
-              </p>
-            </td>
-          </tr>
-        </table>
-      </td>
-    </tr>
-  </table>
-</body>
-</html>`;
+
+
+/** Shared wrapper — Gmail/iOS-compatible dark background using bgcolor table attributes */
+function wrapEmail(innerHtml, accentColor) {
+  accentColor = accentColor || '#00C3FF';
+  return '<!DOCTYPE html>\n<html lang="en">\n<head>\n  <meta charset="UTF-8">\n  <meta name="viewport" content="width=device-width,initial-scale=1">\n  <meta name="color-scheme" content="dark">\n  <meta name="supported-color-schemes" content="dark">\n  <style>\n    body, #body-table, #body-td { background-color: #050816 !important; }\n    .card-td { background-color: #0a0f2e !important; }\n    .footer-td { background-color: #070b1f !important; }\n  </style>\n</head>\n<body bgcolor="#050816" style="margin:0;padding:0;background-color:#050816;font-family:Arial,Helvetica,sans-serif;">\n  <table id="body-table" width="100%" cellpadding="0" cellspacing="0" bgcolor="#050816" style="background-color:#050816;">\n    <tr>\n      <td id="body-td" align="center" bgcolor="#050816" style="padding:30px 16px;background-color:#050816;">\n        <table width="100%" style="max-width:600px;border-radius:14px;border:2px solid ' + accentColor + ';" cellpadding="0" cellspacing="0" bgcolor="#0a0f2e">\n          <tr><td height="4" bgcolor="' + accentColor + '" style="background-color:' + accentColor + ';height:4px;font-size:1px;line-height:1px;">&nbsp;</td></tr>\n          <tr>\n            <td class="card-td" bgcolor="#0a0f2e" style="padding:32px 28px 28px;background-color:#0a0f2e;">\n              ' + innerHtml + '\n            </td>\n          </tr>\n          <tr>\n            <td class="footer-td" bgcolor="#070b1f" style="padding:14px 28px 18px;background-color:#070b1f;border-top:1px solid #0d1535;border-radius:0 0 12px 12px;text-align:center;">\n              <p style="margin:0;font-size:11px;color:#3a4a6b;letter-spacing:0.5px;">&#9889; Neon Voting System &nbsp;|&nbsp; Secure Digital Elections</p>\n            </td>\n          </tr>\n        </table>\n      </td>\n    </tr>\n  </table>\n</body>\n</html>';
 }
 
 function generateVoterInviteEmail(name, orgName, orgId, votingLink) {
-  const inner = `
-    <!-- Header -->
-    <div style="text-align:center;margin-bottom:28px;">
-      <div style="display:inline-block;background:rgba(0,195,255,0.08);border:1px solid rgba(0,195,255,0.25);border-radius:50%;width:64px;height:64px;line-height:64px;font-size:30px;margin-bottom:12px;">🗳️</div>
-      <h1 style="margin:0;font-size:26px;font-weight:700;color:#00C3FF;letter-spacing:1px;text-shadow:0 0 20px rgba(0,195,255,0.5);">
-        You're Invited to Vote!
-      </h1>
-      <p style="margin:6px 0 0;color:#5a7a9a;font-size:13px;letter-spacing:0.5px;">NEON VOTING SYSTEM</p>
-    </div>
-
-    <!-- Greeting -->
-    <p style="margin:0 0 8px;font-size:16px;color:#c8e0f0;">Hello, <span style="color:#00ffaa;font-weight:700;">${name}</span></p>
-    <p style="margin:0 0 24px;font-size:15px;color:#8aaec8;line-height:1.6;">
-      You have been registered as an eligible voter for the
-      <strong style="color:#ffffff;">${orgName}</strong> election.
-      Your participation matters — cast your vote today!
-    </p>
-
-    <!-- Org ID badge -->
-    <div style="background:rgba(0,0,0,0.35);border:1px solid rgba(0,195,255,0.15);border-radius:8px;padding:12px 16px;margin-bottom:24px;">
-      <span style="font-size:11px;color:#3a5a7a;text-transform:uppercase;letter-spacing:1px;">Organisation ID</span><br>
-      <span style="font-size:15px;color:#00C3FF;font-family:monospace;letter-spacing:2px;">${orgId}</span>
-    </div>
-
-    <!-- CTA Button -->
-    <div style="text-align:center;margin-bottom:24px;">
-      <a href="${votingLink}"
-         style="display:inline-block;background:linear-gradient(135deg,#00C3FF 0%,#00ffaa 100%);color:#050816;padding:14px 36px;border-radius:30px;text-decoration:none;font-weight:700;font-size:16px;letter-spacing:0.5px;box-shadow:0 0 24px rgba(0,195,255,0.45);">
-        ➜ &nbsp; Go to Voting Portal
-      </a>
-    </div>
-
-    <!-- Note -->
-    <p style="margin:0;font-size:12px;color:#2a3a5a;text-align:center;line-height:1.6;">
-      If the button doesn't work, copy this link into your browser:<br>
-      <a href="${votingLink}" style="color:#006080;word-break:break-all;">${votingLink}</a>
-    </p>
-  `;
+  var inner = '\n'
+    + '    <div style="text-align:center;margin-bottom:28px;">\n'
+    + '      <table cellpadding="0" cellspacing="0" style="margin:0 auto 14px;">\n'
+    + '        <tr><td bgcolor="#0d1635" width="68" height="68" style="background-color:#0d1635;border:2px solid #00C3FF;border-radius:50%;text-align:center;vertical-align:middle;font-size:32px;width:68px;height:68px;">&#128379;</td></tr>\n'
+    + '      </table>\n'
+    + '      <h1 style="margin:0;font-size:26px;font-weight:700;color:#00C3FF;letter-spacing:1px;">You\'re Invited to Vote!</h1>\n'
+    + '      <p style="margin:6px 0 0;color:#1a4a6a;font-size:12px;letter-spacing:1.5px;text-transform:uppercase;">Neon Voting System</p>\n'
+    + '    </div>\n'
+    + '\n'
+    + '    <p style="margin:0 0 6px;font-size:16px;color:#c8dff0;">Hello, <strong style="color:#00ffaa;">' + (name || 'Voter') + '</strong></p>\n'
+    + '    <p style="margin:0 0 24px;font-size:14px;color:#5a8aaa;line-height:1.7;">\n'
+    + '      You have been registered as an eligible voter for the\n'
+    + '      <strong style="color:#e0f0ff;">' + orgName + '</strong> election.\n'
+    + '      Your participation matters &mdash; cast your vote today!\n'
+    + '    </p>\n'
+    + '\n'
+    + '    <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:24px;">\n'
+    + '      <tr><td bgcolor="#080d20" style="background-color:#080d20;border:1px solid #0a3a5a;border-radius:8px;padding:14px 18px;">\n'
+    + '        <p style="margin:0 0 4px;font-size:10px;color:#1a4a6a;text-transform:uppercase;letter-spacing:1.5px;">Organisation ID</p>\n'
+    + '        <p style="margin:0;font-size:16px;color:#00C3FF;font-family:monospace;letter-spacing:3px;">' + orgId + '</p>\n'
+    + '      </td></tr>\n'
+    + '    </table>\n'
+    + '\n'
+    + '    <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:24px;">\n'
+    + '      <tr><td align="center">\n'
+    + '        <a href="' + votingLink + '" style="display:inline-block;background-color:#00C3FF;color:#050816;padding:15px 40px;border-radius:30px;text-decoration:none;font-weight:700;font-size:16px;">\n'
+    + '          &#x27A1;&nbsp; Go to Voting Portal\n'
+    + '        </a>\n'
+    + '      </td></tr>\n'
+    + '    </table>\n'
+    + '\n'
+    + '    <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:20px;">\n'
+    + '      <tr><td bgcolor="#080d20" style="background-color:#080d20;border:1px solid #0a2a4a;border-radius:10px;padding:18px 20px;">\n'
+    + '        <p style="margin:0 0 10px;font-size:10px;color:#1a3a5a;text-transform:uppercase;letter-spacing:1.5px;">How to Vote</p>\n'
+    + '        <ol style="margin:0;padding-left:18px;color:#5a8aaa;font-size:13px;line-height:2.1;">\n'
+    + '          <li>Click <strong style="color:#00C3FF;">"Go to Voting Portal"</strong> above</li>\n'
+    + '          <li>Enter Organisation ID: <strong style="color:#00C3FF;font-family:monospace;">' + orgId + '</strong></li>\n'
+    + '          <li>Enter your registered email address</li>\n'
+    + '          <li>Review candidates and make your selections</li>\n'
+    + '          <li>Submit your ballot securely</li>\n'
+    + '        </ol>\n'
+    + '      </td></tr>\n'
+    + '    </table>\n'
+    + '\n'
+    + '    <p style="margin:0;font-size:11px;color:#1a3a5a;text-align:center;line-height:1.6;">\n'
+    + '      Button not working? Copy this link:<br>\n'
+    + '      <a href="' + votingLink + '" style="color:#005a7a;word-break:break-all;font-size:11px;">' + votingLink + '</a>\n'
+    + '    </p>\n';
   return wrapEmail(inner, '#00C3FF');
 }
 
 function generateOTPEmail(otpCode) {
-  const inner = `
-    <!-- Header -->
-    <div style="text-align:center;margin-bottom:28px;">
-      <div style="display:inline-block;background:rgba(157,0,255,0.1);border:1px solid rgba(157,0,255,0.3);border-radius:50%;width:64px;height:64px;line-height:64px;font-size:30px;margin-bottom:12px;">🔐</div>
-      <h1 style="margin:0;font-size:24px;font-weight:700;color:#be6cff;letter-spacing:1px;text-shadow:0 0 20px rgba(157,0,255,0.5);">
-        Verification Code
-      </h1>
-      <p style="margin:6px 0 0;color:#5a4a7a;font-size:13px;letter-spacing:0.5px;">NEON VOTING SYSTEM</p>
-    </div>
-
-    <p style="margin:0 0 24px;font-size:15px;color:#8aaec8;line-height:1.6;text-align:center;">
-      Use the code below to complete your login. Do not share it with anyone.
-    </p>
-
-    <!-- OTP Display -->
-    <div style="text-align:center;margin-bottom:24px;">
-      <div style="display:inline-block;background:rgba(0,0,0,0.45);border:2px solid rgba(157,0,255,0.5);border-radius:12px;padding:20px 40px;box-shadow:0 0 30px rgba(157,0,255,0.25);">
-        <span style="font-size:42px;font-weight:700;color:#00ffaa;letter-spacing:10px;font-family:monospace;">${otpCode}</span>
-      </div>
-    </div>
-
-    <!-- Expiry warning -->
-    <div style="background:rgba(255,170,0,0.07);border:1px solid rgba(255,170,0,0.2);border-radius:8px;padding:12px 16px;text-align:center;">
-      <span style="font-size:13px;color:#ffaa00;">⏱ This code expires in <strong>5 minutes</strong></span>
-    </div>
-  `;
+  var inner = '\n'
+    + '    <div style="text-align:center;margin-bottom:28px;">\n'
+    + '      <table cellpadding="0" cellspacing="0" style="margin:0 auto 14px;">\n'
+    + '        <tr><td bgcolor="#0d0820" width="68" height="68" style="background-color:#0d0820;border:2px solid #9D00FF;border-radius:50%;text-align:center;vertical-align:middle;font-size:32px;width:68px;height:68px;">&#128272;</td></tr>\n'
+    + '      </table>\n'
+    + '      <h1 style="margin:0;font-size:24px;font-weight:700;color:#be6cff;letter-spacing:1px;">Verification Code</h1>\n'
+    + '      <p style="margin:6px 0 0;color:#2a1a4a;font-size:12px;letter-spacing:1.5px;text-transform:uppercase;">Neon Voting System</p>\n'
+    + '    </div>\n'
+    + '\n'
+    + '    <p style="margin:0 0 24px;font-size:14px;color:#5a7aaa;line-height:1.7;text-align:center;">\n'
+    + '      Use the code below to complete your login.<br>\n'
+    + '      <strong style="color:#ff9999;">Do not share this code with anyone.</strong>\n'
+    + '    </p>\n'
+    + '\n'
+    + '    <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:20px;">\n'
+    + '      <tr><td align="center">\n'
+    + '        <table cellpadding="0" cellspacing="0">\n'
+    + '          <tr><td bgcolor="#080520" style="background-color:#080520;border:2px solid #9D00FF;border-radius:14px;padding:24px 48px;text-align:center;">\n'
+    + '            <p style="margin:0;font-size:46px;font-weight:700;color:#00ffaa;letter-spacing:12px;font-family:monospace;">' + otpCode + '</p>\n'
+    + '          </td></tr>\n'
+    + '        </table>\n'
+    + '      </td></tr>\n'
+    + '    </table>\n'
+    + '\n'
+    + '    <table width="100%" cellpadding="0" cellspacing="0">\n'
+    + '      <tr><td bgcolor="#120a00" style="background-color:#120a00;border:1px solid #3a2a00;border-radius:8px;padding:12px 16px;text-align:center;">\n'
+    + '        <p style="margin:0;font-size:13px;color:#ffaa00;">&#9201; This code expires in <strong>5 minutes</strong></p>\n'
+    + '      </td></tr>\n'
+    + '    </table>\n';
   return wrapEmail(inner, '#9D00FF');
 }
 
 function generateECAccessEmail(name, orgName, orgId, loginLink, password) {
-  const inner = `
-    <!-- Header -->
-    <div style="text-align:center;margin-bottom:28px;">
-      <div style="display:inline-block;background:rgba(157,0,255,0.1);border:1px solid rgba(157,0,255,0.3);border-radius:50%;width:64px;height:64px;line-height:64px;font-size:30px;margin-bottom:12px;">🔑</div>
-      <h1 style="margin:0;font-size:24px;font-weight:700;color:#be6cff;letter-spacing:1px;text-shadow:0 0 20px rgba(157,0,255,0.5);">
-        EC Access Granted
-      </h1>
-      <p style="margin:6px 0 0;color:#5a4a7a;font-size:13px;letter-spacing:0.5px;">NEON VOTING SYSTEM</p>
-    </div>
-
-    <p style="margin:0 0 8px;font-size:16px;color:#c8e0f0;">Hello, <span style="color:#be6cff;font-weight:700;">${name}</span></p>
-    <p style="margin:0 0 24px;font-size:15px;color:#8aaec8;line-height:1.6;">
-      You've been appointed as an <strong style="color:#ffffff;">Election Commissioner</strong> for
-      <strong style="color:#ffffff;">${orgName}</strong>. Use the credentials below to log in.
-    </p>
-
-    <!-- Credentials Box -->
-    <div style="background:rgba(0,0,0,0.4);border:1px solid rgba(157,0,255,0.25);border-radius:10px;padding:20px;margin-bottom:24px;font-family:monospace;">
-      <div style="margin-bottom:10px;">
-        <span style="font-size:11px;color:#5a4a7a;text-transform:uppercase;letter-spacing:1px;">Organisation ID</span><br>
-        <span style="font-size:16px;color:#00C3FF;letter-spacing:2px;">${orgId}</span>
-      </div>
-      ${password ? `
-      <div>
-        <span style="font-size:11px;color:#5a4a7a;text-transform:uppercase;letter-spacing:1px;">Temporary Password</span><br>
-        <span style="font-size:16px;color:#00ffaa;letter-spacing:2px;">${password}</span>
-      </div>` : ''}
-    </div>
-
-    <!-- CTA -->
-    <div style="text-align:center;margin-bottom:24px;">
-      <a href="${loginLink}"
-         style="display:inline-block;background:linear-gradient(135deg,#9D00FF 0%,#00C3FF 100%);color:#ffffff;padding:14px 36px;border-radius:30px;text-decoration:none;font-weight:700;font-size:16px;letter-spacing:0.5px;box-shadow:0 0 24px rgba(157,0,255,0.4);">
-        ➜ &nbsp; Log In to Dashboard
-      </a>
-    </div>
-
-    <p style="margin:0;font-size:12px;color:#2a3a5a;text-align:center;">
-      Change your password after first login for security.
-    </p>
-  `;
+  var passwordBlock = password
+    ? '<p style="margin:0 0 4px;font-size:10px;color:#2a1a4a;text-transform:uppercase;letter-spacing:1.5px;">Temporary Password</p><p style="margin:0;font-size:17px;color:#00ffaa;font-family:monospace;letter-spacing:3px;">' + password + '</p>'
+    : '';
+  var inner = '\n'
+    + '    <div style="text-align:center;margin-bottom:28px;">\n'
+    + '      <table cellpadding="0" cellspacing="0" style="margin:0 auto 14px;">\n'
+    + '        <tr><td bgcolor="#0d0820" width="68" height="68" style="background-color:#0d0820;border:2px solid #9D00FF;border-radius:50%;text-align:center;vertical-align:middle;font-size:32px;width:68px;height:68px;">&#128273;</td></tr>\n'
+    + '      </table>\n'
+    + '      <h1 style="margin:0;font-size:24px;font-weight:700;color:#be6cff;letter-spacing:1px;">EC Access Granted</h1>\n'
+    + '      <p style="margin:6px 0 0;color:#2a1a4a;font-size:12px;letter-spacing:1.5px;text-transform:uppercase;">Neon Voting System</p>\n'
+    + '    </div>\n'
+    + '\n'
+    + '    <p style="margin:0 0 6px;font-size:16px;color:#c8dff0;">Hello, <strong style="color:#be6cff;">' + (name || 'Election Commissioner') + '</strong></p>\n'
+    + '    <p style="margin:0 0 24px;font-size:14px;color:#5a7aaa;line-height:1.7;">\n'
+    + '      You\'ve been appointed as an <strong style="color:#e0f0ff;">Election Commissioner</strong> for\n'
+    + '      <strong style="color:#e0f0ff;">' + orgName + '</strong>. Use the credentials below to log in.\n'
+    + '    </p>\n'
+    + '\n'
+    + '    <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:20px;">\n'
+    + '      <tr><td bgcolor="#080520" style="background-color:#080520;border:1px solid #2a1a4a;border-radius:10px;padding:20px;">\n'
+    + '        <p style="margin:0 0 4px;font-size:10px;color:#2a1a4a;text-transform:uppercase;letter-spacing:1.5px;">Organisation ID</p>\n'
+    + '        <p style="margin:0 0 16px;font-size:17px;color:#00C3FF;font-family:monospace;letter-spacing:3px;">' + orgId + '</p>\n'
+    + '        ' + passwordBlock + '\n'
+    + '      </td></tr>\n'
+    + '    </table>\n'
+    + '\n'
+    + '    <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:20px;">\n'
+    + '      <tr><td bgcolor="#120a00" style="background-color:#120a00;border:1px solid #3a2a00;border-left:3px solid #ffaa00;border-radius:6px;padding:10px 14px;">\n'
+    + '        <p style="margin:0;font-size:12px;color:#cc8800;">&#9888; Change your password after first login for security.</p>\n'
+    + '      </td></tr>\n'
+    + '    </table>\n'
+    + '\n'
+    + '    <table width="100%" cellpadding="0" cellspacing="0">\n'
+    + '      <tr><td align="center">\n'
+    + '        <a href="' + loginLink + '" style="display:inline-block;background-color:#9D00FF;color:#ffffff;padding:15px 40px;border-radius:30px;text-decoration:none;font-weight:700;font-size:16px;">\n'
+    + '          &#x27A1;&nbsp; Log In to Dashboard\n'
+    + '        </a>\n'
+    + '      </td></tr>\n'
+    + '    </table>\n';
   return wrapEmail(inner, '#9D00FF');
 }
 
 function generateElectionApprovedEmail(orgName) {
-  const inner = `
-    <!-- Header -->
-    <div style="text-align:center;margin-bottom:28px;">
-      <div style="display:inline-block;background:rgba(0,255,170,0.1);border:1px solid rgba(0,255,170,0.3);border-radius:50%;width:64px;height:64px;line-height:64px;font-size:30px;margin-bottom:12px;">✅</div>
-      <h1 style="margin:0;font-size:26px;font-weight:700;color:#00ffaa;letter-spacing:1px;text-shadow:0 0 20px rgba(0,255,170,0.4);">
-        Election Approved!
-      </h1>
-      <p style="margin:6px 0 0;color:#2a6a5a;font-size:13px;letter-spacing:0.5px;">NEON VOTING SYSTEM</p>
-    </div>
-
-    <!-- Status Badge -->
-    <div style="text-align:center;margin-bottom:24px;">
-      <div style="display:inline-block;background:rgba(0,255,170,0.08);border:1px solid rgba(0,255,170,0.3);border-radius:30px;padding:8px 24px;">
-        <span style="color:#00ffaa;font-size:13px;font-weight:700;letter-spacing:1px;">LIVE &nbsp;•&nbsp; VOTING NOW ACTIVE</span>
-      </div>
-    </div>
-
-    <p style="margin:0 0 16px;font-size:15px;color:#8aaec8;line-height:1.6;text-align:center;">
-      The <strong style="color:#ffffff;">${orgName}</strong> election has been approved by the Super Admin.
-      Registered voters can now cast their ballots.
-    </p>
-
-    <!-- Divider -->
-    <div style="height:1px;background:linear-gradient(90deg,transparent,rgba(0,255,170,0.3),transparent);margin:20px 0;"></div>
-
-    <p style="margin:0;font-size:13px;color:#3a5a4a;text-align:center;">
-      Log in to your EC Dashboard to monitor live voting progress.
-    </p>
-  `;
+  var inner = '\n'
+    + '    <div style="text-align:center;margin-bottom:28px;">\n'
+    + '      <table cellpadding="0" cellspacing="0" style="margin:0 auto 14px;">\n'
+    + '        <tr><td bgcolor="#041a10" width="68" height="68" style="background-color:#041a10;border:2px solid #00ffaa;border-radius:50%;text-align:center;vertical-align:middle;font-size:32px;width:68px;height:68px;">&#9989;</td></tr>\n'
+    + '      </table>\n'
+    + '      <h1 style="margin:0;font-size:26px;font-weight:700;color:#00ffaa;letter-spacing:1px;">Election Approved!</h1>\n'
+    + '      <p style="margin:6px 0 0;color:#0a3a1a;font-size:12px;letter-spacing:1.5px;text-transform:uppercase;">Neon Voting System</p>\n'
+    + '    </div>\n'
+    + '\n'
+    + '    <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:24px;">\n'
+    + '      <tr><td align="center">\n'
+    + '        <table cellpadding="0" cellspacing="0">\n'
+    + '          <tr><td bgcolor="#041a10" style="background-color:#041a10;border:1px solid #00ffaa;border-radius:30px;padding:8px 28px;">\n'
+    + '            <p style="margin:0;font-size:12px;color:#00ffaa;font-weight:700;letter-spacing:2px;">LIVE &nbsp;&#8226;&nbsp; VOTING NOW ACTIVE</p>\n'
+    + '          </td></tr>\n'
+    + '        </table>\n'
+    + '      </td></tr>\n'
+    + '    </table>\n'
+    + '\n'
+    + '    <p style="margin:0 0 20px;font-size:14px;color:#5a8a7a;line-height:1.7;text-align:center;">\n'
+    + '      The <strong style="color:#e0f0ff;">' + orgName + '</strong> election has been approved by the Super Admin.<br>\n'
+    + '      Registered voters can now cast their ballots.\n'
+    + '    </p>\n'
+    + '\n'
+    + '    <p style="margin:0;font-size:12px;color:#1a3a2a;text-align:center;">\n'
+    + '      Log in to your EC Dashboard to monitor live voting progress.\n'
+    + '    </p>\n';
   return wrapEmail(inner, '#00ffaa');
 }
 
 function generateResultsPublishedEmail(orgName, orgId, appUrl) {
-  const inner = `
-    <!-- Header -->
-    <div style="text-align:center;margin-bottom:28px;">
-      <div style="display:inline-block;background:rgba(0,195,255,0.1);border:1px solid rgba(0,195,255,0.3);border-radius:50%;width:64px;height:64px;line-height:64px;font-size:30px;margin-bottom:12px;">📊</div>
-      <h1 style="margin:0;font-size:26px;font-weight:700;color:#00C3FF;letter-spacing:1px;text-shadow:0 0 20px rgba(0,195,255,0.5);">
-        Election Results Are In!
-      </h1>
-      <p style="margin:6px 0 0;color:#2a4a6a;font-size:13px;letter-spacing:0.5px;">NEON VOTING SYSTEM</p>
-    </div>
-
-    <p style="margin:0 0 24px;font-size:15px;color:#8aaec8;line-height:1.6;text-align:center;">
-      The official results for the <strong style="color:#ffffff;">${orgName}</strong> election
-      have been declared and are now publicly available.
-    </p>
-
-    <!-- Org ID badge -->
-    <div style="background:rgba(0,0,0,0.35);border:1px solid rgba(0,195,255,0.15);border-radius:8px;padding:12px 16px;margin-bottom:24px;text-align:center;">
-      <span style="font-size:11px;color:#3a5a7a;text-transform:uppercase;letter-spacing:1px;">Organisation ID</span><br>
-      <span style="font-size:15px;color:#00C3FF;font-family:monospace;letter-spacing:2px;">${orgId}</span>
-    </div>
-
-    <!-- CTA Button -->
-    <div style="text-align:center;margin-bottom:24px;">
-      <a href="${appUrl}?role=results&org=${orgId}"
-         style="display:inline-block;background:linear-gradient(135deg,#00C3FF 0%,#00ffaa 100%);color:#050816;padding:14px 36px;border-radius:30px;text-decoration:none;font-weight:700;font-size:16px;letter-spacing:0.5px;box-shadow:0 0 24px rgba(0,195,255,0.45);">
-        📊 &nbsp; View Full Results
-      </a>
-    </div>
-
-    <p style="margin:0;font-size:12px;color:#2a3a5a;text-align:center;">
-      Results are live and publicly accessible. No login required to view.
-    </p>
-  `;
+  var inner = '\n'
+    + '    <div style="text-align:center;margin-bottom:28px;">\n'
+    + '      <table cellpadding="0" cellspacing="0" style="margin:0 auto 14px;">\n'
+    + '        <tr><td bgcolor="#041520" width="68" height="68" style="background-color:#041520;border:2px solid #00C3FF;border-radius:50%;text-align:center;vertical-align:middle;font-size:32px;width:68px;height:68px;">&#128202;</td></tr>\n'
+    + '      </table>\n'
+    + '      <h1 style="margin:0;font-size:26px;font-weight:700;color:#00C3FF;letter-spacing:1px;">Election Results Are In!</h1>\n'
+    + '      <p style="margin:6px 0 0;color:#1a3a5a;font-size:12px;letter-spacing:1.5px;text-transform:uppercase;">Neon Voting System</p>\n'
+    + '    </div>\n'
+    + '\n'
+    + '    <p style="margin:0 0 24px;font-size:14px;color:#5a7aaa;line-height:1.7;text-align:center;">\n'
+    + '      The official results for the <strong style="color:#e0f0ff;">' + orgName + '</strong> election\n'
+    + '      have been declared and are now publicly available.\n'
+    + '    </p>\n'
+    + '\n'
+    + '    <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:24px;">\n'
+    + '      <tr><td bgcolor="#080d20" style="background-color:#080d20;border:1px solid #0a3a5a;border-radius:8px;padding:14px 18px;text-align:center;">\n'
+    + '        <p style="margin:0 0 4px;font-size:10px;color:#1a4a6a;text-transform:uppercase;letter-spacing:1.5px;">Organisation ID</p>\n'
+    + '        <p style="margin:0;font-size:16px;color:#00C3FF;font-family:monospace;letter-spacing:3px;">' + orgId + '</p>\n'
+    + '      </td></tr>\n'
+    + '    </table>\n'
+    + '\n'
+    + '    <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:20px;">\n'
+    + '      <tr><td align="center">\n'
+    + '        <a href="' + appUrl + '?role=results&org=' + orgId + '" style="display:inline-block;background-color:#00C3FF;color:#050816;padding:15px 40px;border-radius:30px;text-decoration:none;font-weight:700;font-size:16px;">\n'
+    + '          &#128202;&nbsp; View Full Results\n'
+    + '        </a>\n'
+    + '      </td></tr>\n'
+    + '    </table>\n'
+    + '\n'
+    + '    <p style="margin:0;font-size:11px;color:#1a3a5a;text-align:center;">\n'
+    + '      Results are live and publicly accessible. No login required to view.\n'
+    + '    </p>\n';
   return wrapEmail(inner, '#00C3FF');
 }
 
 function generateElectionRejectedEmail(ecName, orgName, rejectionReason, appUrl) {
-  const inner = `
-    <!-- Header -->
-    <div style="text-align:center;margin-bottom:28px;">
-      <div style="display:inline-block;background:rgba(255,80,80,0.1);border:1px solid rgba(255,80,80,0.3);border-radius:50%;width:64px;height:64px;line-height:64px;font-size:30px;margin-bottom:12px;">❌</div>
-      <h1 style="margin:0;font-size:24px;font-weight:700;color:#ff6b6b;letter-spacing:1px;text-shadow:0 0 20px rgba(255,80,80,0.4);">
-        Election Returned for Correction
-      </h1>
-      <p style="margin:6px 0 0;color:#6a3a3a;font-size:13px;letter-spacing:0.5px;">NEON VOTING SYSTEM</p>
-    </div>
-
-    <p style="margin:0 0 8px;font-size:16px;color:#c8e0f0;">Hello, <span style="color:#ff9999;font-weight:700;">${ecName}</span></p>
-    <p style="margin:0 0 24px;font-size:15px;color:#8aaec8;line-height:1.6;">
-      Your election submission for <strong style="color:#ffffff;">${orgName}</strong> has been
-      reviewed and returned for corrections by the Super Admin.
-    </p>
-
-    <!-- Feedback Box -->
-    <div style="background:rgba(255,68,68,0.06);border:1px solid rgba(255,107,107,0.3);border-left:4px solid #ff4444;border-radius:10px;padding:20px;margin-bottom:24px;">
-      <p style="margin:0 0 8px;font-size:12px;color:#6a3a3a;text-transform:uppercase;letter-spacing:1px;">📝 Feedback from Super Admin</p>
-      <p style="margin:0;font-size:15px;color:#eaf2ff;line-height:1.7;">${rejectionReason}</p>
-    </div>
-
-    <!-- Steps -->
-    <div style="background:rgba(0,0,0,0.25);border:1px solid rgba(255,255,255,0.06);border-radius:10px;padding:20px;margin-bottom:24px;">
-      <p style="margin:0 0 12px;font-size:13px;color:#5a6a8a;text-transform:uppercase;letter-spacing:1px;">What to do next</p>
-      <ol style="margin:0;padding-left:20px;color:#9baec8;line-height:2;font-size:14px;">
-        <li>Log in to your <span style="color:#00C3FF;">EC Dashboard</span></li>
-        <li>Make the corrections based on the feedback above</li>
-        <li>Go to the <strong style="color:#ffffff;">Approval</strong> tab</li>
-        <li>Click <strong style="color:#00ffaa;">"Resubmit for Approval"</strong></li>
-      </ol>
-    </div>
-
-    <!-- CTA -->
-    <div style="text-align:center;margin-bottom:24px;">
-      <a href="${appUrl}?role=ec"
-         style="display:inline-block;background:linear-gradient(135deg,#9D00FF 0%,#00C3FF 100%);color:#ffffff;padding:14px 36px;border-radius:30px;text-decoration:none;font-weight:700;font-size:16px;letter-spacing:0.5px;box-shadow:0 0 24px rgba(157,0,255,0.4);">
-        ➜ &nbsp; Log In to Dashboard
-      </a>
-    </div>
-
-    <p style="margin:0;font-size:12px;color:#2a3a5a;text-align:center;line-height:1.7;">
-      Your election is now unlocked for editing.<br>
-      Contact your Super Admin if you have questions about the feedback.
-    </p>
-  `;
+  var inner = '\n'
+    + '    <div style="text-align:center;margin-bottom:28px;">\n'
+    + '      <table cellpadding="0" cellspacing="0" style="margin:0 auto 14px;">\n'
+    + '        <tr><td bgcolor="#200808" width="68" height="68" style="background-color:#200808;border:2px solid #ff6b6b;border-radius:50%;text-align:center;vertical-align:middle;font-size:32px;width:68px;height:68px;">&#10060;</td></tr>\n'
+    + '      </table>\n'
+    + '      <h1 style="margin:0;font-size:22px;font-weight:700;color:#ff6b6b;letter-spacing:1px;">Election Returned for Correction</h1>\n'
+    + '      <p style="margin:6px 0 0;color:#4a1a1a;font-size:12px;letter-spacing:1.5px;text-transform:uppercase;">Neon Voting System</p>\n'
+    + '    </div>\n'
+    + '\n'
+    + '    <p style="margin:0 0 6px;font-size:16px;color:#c8dff0;">Hello, <strong style="color:#ff9999;">' + (ecName || 'Election Commissioner') + '</strong></p>\n'
+    + '    <p style="margin:0 0 24px;font-size:14px;color:#5a7aaa;line-height:1.7;">\n'
+    + '      Your election submission for <strong style="color:#e0f0ff;">' + orgName + '</strong> has been\n'
+    + '      reviewed and returned for corrections by the Super Admin.\n'
+    + '    </p>\n'
+    + '\n'
+    + '    <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:24px;">\n'
+    + '      <tr><td bgcolor="#150505" style="background-color:#150505;border:1px solid #3a1010;border-left:4px solid #ff4444;border-radius:8px;padding:18px 20px;">\n'
+    + '        <p style="margin:0 0 8px;font-size:10px;color:#4a1a1a;text-transform:uppercase;letter-spacing:1.5px;">&#128221; Feedback from Super Admin</p>\n'
+    + '        <p style="margin:0;font-size:14px;color:#e0c8c8;line-height:1.8;">' + (rejectionReason || 'Please review and correct your election submission.') + '</p>\n'
+    + '      </td></tr>\n'
+    + '    </table>\n'
+    + '\n'
+    + '    <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:24px;">\n'
+    + '      <tr><td bgcolor="#080d20" style="background-color:#080d20;border:1px solid #0d1535;border-radius:10px;padding:18px 20px;">\n'
+    + '        <p style="margin:0 0 10px;font-size:10px;color:#2a3a5a;text-transform:uppercase;letter-spacing:1.5px;">What to do next</p>\n'
+    + '        <ol style="margin:0;padding-left:18px;color:#5a7aaa;font-size:13px;line-height:2.2;">\n'
+    + '          <li>Log in to your <strong style="color:#00C3FF;">EC Dashboard</strong></li>\n'
+    + '          <li>Make corrections based on the feedback above</li>\n'
+    + '          <li>Go to the <strong style="color:#e0f0ff;">Approval</strong> tab</li>\n'
+    + '          <li>Click <strong style="color:#00ffaa;">"Resubmit for Approval"</strong></li>\n'
+    + '        </ol>\n'
+    + '      </td></tr>\n'
+    + '    </table>\n'
+    + '\n'
+    + '    <table width="100%" cellpadding="0" cellspacing="0">\n'
+    + '      <tr><td align="center">\n'
+    + '        <a href="' + appUrl + '?role=ec" style="display:inline-block;background-color:#9D00FF;color:#ffffff;padding:15px 40px;border-radius:30px;text-decoration:none;font-weight:700;font-size:16px;">\n'
+    + '          &#x27A1;&nbsp; Log In to Dashboard\n'
+    + '        </a>\n'
+    + '      </td></tr>\n'
+    + '    </table>\n';
   return wrapEmail(inner, '#ff6b6b');
 }
 
-function generateVotingReminderEmail(name, orgName, orgId, votingLink, reminderType = 'reminder') {
-  const isOpen = reminderType === 'open';
-  const icon = isOpen ? '🗳️' : '⏰';
-  const title = isOpen ? 'Voting Is Now Open!' : 'Voting Reminder';
-  const accentColor = isOpen ? '#00ffaa' : '#ffaa00';
-  const borderColor = isOpen ? 'rgba(0,255,170,0.4)' : 'rgba(255,170,0,0.4)';
-  const glowColor = isOpen ? 'rgba(0,255,170,0.2)' : 'rgba(255,170,0,0.2)';
-  const message = isOpen
-    ? `Voting is now <strong style="color:#00ffaa;">LIVE</strong>! Cast your vote for <strong style="color:#ffffff;">${orgName}</strong> now before it closes.`
-    : `Don't forget — voting is open for <strong style="color:#ffffff;">${orgName}</strong>. Click below to cast your vote now!`;
+function generateVotingReminderEmail(name, orgName, orgId, votingLink, reminderType) {
+  reminderType = reminderType || 'reminder';
+  var isOpen = reminderType === 'open';
+  var icon = isOpen ? '&#128379;' : '&#9200;';
+  var title = isOpen ? 'Voting Is Now Open!' : 'Voting Reminder';
+  var accentColor = isOpen ? '#00ffaa' : '#ffaa00';
+  var accentBorder = isOpen ? '#00ffaa' : '#ffaa00';
+  var bgDark = isOpen ? '#041a10' : '#120a00';
+  var msgBg = isOpen ? '#031208' : '#0e0800';
+  var message = isOpen
+    ? 'Voting is now <strong style="color:#00ffaa;">LIVE</strong>! Cast your vote for <strong style="color:#e0f0ff;">' + orgName + '</strong> before it closes.'
+    : 'Don\'t forget &mdash; voting is open for <strong style="color:#e0f0ff;">' + orgName + '</strong>. Click below to cast your vote now!';
 
-  const inner = `
-    <!-- Header Icon -->
-    <div style="text-align:center;margin-bottom:28px;">
-      <div style="display:inline-block;background:rgba(0,0,0,0.3);border:2px solid ${borderColor};border-radius:50%;width:72px;height:72px;line-height:72px;font-size:34px;margin-bottom:14px;box-shadow:0 0 24px ${glowColor};">
-        ${icon}
-      </div>
-      <h1 style="margin:0;font-size:28px;font-weight:700;color:${accentColor};letter-spacing:1px;text-shadow:0 0 24px ${glowColor};">
-        ${title}
-      </h1>
-      <p style="margin:8px 0 0;font-size:13px;color:#3a5a7a;letter-spacing:1px;text-transform:uppercase;">
-        ${orgName}
-      </p>
-    </div>
-
-    ${name ? `<p style="margin:0 0 20px;font-size:15px;color:#c8e0f0;">Hi <strong style="color:${accentColor};">${name}</strong>,</p>` : ''}
-
-    <!-- Message Box -->
-    <div style="background:rgba(0,0,0,0.35);border:1px solid ${borderColor};border-radius:12px;padding:20px 22px;margin-bottom:28px;text-align:center;">
-      <p style="margin:0;font-size:16px;color:#d0eaff;line-height:1.8;">
-        ${message}
-      </p>
-    </div>
-
-    <!-- CTA Button -->
-    <div style="text-align:center;margin-bottom:28px;">
-      <a href="${votingLink}"
-         style="display:inline-block;background:linear-gradient(135deg,${accentColor} 0%,#00C3FF 100%);color:#050816;padding:16px 44px;border-radius:30px;text-decoration:none;font-weight:700;font-size:17px;letter-spacing:0.5px;box-shadow:0 0 28px ${glowColor};">
-        🗳️ &nbsp; Go to Voting Portal
-      </a>
-    </div>
-
-    <!-- Divider -->
-    <div style="height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.08),transparent);margin-bottom:20px;"></div>
-
-    <!-- Org Info -->
-    <table width="100%" cellpadding="0" cellspacing="0">
-      <tr>
-        <td style="padding:4px 0;">
-          <span style="font-size:12px;color:#3a5a7a;">Organisation ID:&nbsp;</span>
-          <span style="font-size:12px;color:#00C3FF;font-family:monospace;letter-spacing:1px;">${orgId}</span>
-        </td>
-      </tr>
-      <tr>
-        <td style="padding:4px 0;">
-          <span style="font-size:12px;color:#3a5a7a;">If you have questions, contact your Election Commissioner.</span>
-        </td>
-      </tr>
-    </table>
-  `;
+  var inner = '\n'
+    + '    <div style="text-align:center;margin-bottom:28px;">\n'
+    + '      <table cellpadding="0" cellspacing="0" style="margin:0 auto 14px;">\n'
+    + '        <tr><td bgcolor="' + bgDark + '" width="72" height="72" style="background-color:' + bgDark + ';border:2px solid ' + accentBorder + ';border-radius:50%;text-align:center;vertical-align:middle;font-size:34px;width:72px;height:72px;">' + icon + '</td></tr>\n'
+    + '      </table>\n'
+    + '      <h1 style="margin:0;font-size:28px;font-weight:700;color:' + accentColor + ';letter-spacing:1px;">' + title + '</h1>\n'
+    + '      <p style="margin:8px 0 0;font-size:12px;color:#1a3a2a;letter-spacing:1.5px;text-transform:uppercase;">' + orgName + '</p>\n'
+    + '    </div>\n'
+    + '\n'
+    + (name ? '    <p style="margin:0 0 20px;font-size:15px;color:#c8dff0;">Hi <strong style="color:' + accentColor + ';">' + name + '</strong>,</p>\n' : '')
+    + '\n'
+    + '    <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:28px;">\n'
+    + '      <tr><td bgcolor="' + msgBg + '" style="background-color:' + msgBg + ';border:1px solid ' + accentBorder + ';border-radius:12px;padding:20px 22px;text-align:center;">\n'
+    + '        <p style="margin:0;font-size:16px;color:#d0eaff;line-height:1.9;">' + message + '</p>\n'
+    + '      </td></tr>\n'
+    + '    </table>\n'
+    + '\n'
+    + '    <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:28px;">\n'
+    + '      <tr><td align="center">\n'
+    + '        <a href="' + votingLink + '" style="display:inline-block;background-color:' + accentColor + ';color:#050816;padding:16px 44px;border-radius:30px;text-decoration:none;font-weight:700;font-size:17px;">\n'
+    + '          &#128379;&nbsp; Go to Voting Portal\n'
+    + '        </a>\n'
+    + '      </td></tr>\n'
+    + '    </table>\n'
+    + '\n'
+    + '    <p style="margin:0 0 4px;font-size:12px;color:#2a4a3a;">\n'
+    + '      Organisation ID: <strong style="color:#00C3FF;font-family:monospace;">' + orgId + '</strong>\n'
+    + '    </p>\n'
+    + '    <p style="margin:0;font-size:12px;color:#2a4a3a;">\n'
+    + '      If you have questions, contact your Election Commissioner.\n'
+    + '    </p>\n';
   return wrapEmail(inner, accentColor);
 }
+

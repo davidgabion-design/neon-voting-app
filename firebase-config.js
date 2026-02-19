@@ -11,5 +11,8 @@ const firebaseConfig = {
   measurementId: env.FIREBASE_MEASUREMENT_ID || "G-VGW2Z3FR8M"
 };
 
+// Set APP_URL for email invites - use production URL by default
+window.APP_URL = window.location.origin || "https://neon-voting-app.netlify.app";
+
 // Export for use in script.js
 window.firebaseConfig = firebaseConfig;

@@ -1,11 +1,10 @@
 // Neon Voting Platform - Service Worker
-// Provides offline functionality and caching for improved performance
+// Simplified version - Only caches local assets, never external resources
 
-const CACHE_VERSION = 'neon-voting-v2-20260219';
+const CACHE_VERSION = 'neon-voting-v3-20260219';
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
-const DYNAMIC_CACHE = `${CACHE_VERSION}-dynamic`;
 
-// Static assets to cache immediately on install
+// Only cache YOUR OWN static assets - NO external resources
 const STATIC_ASSETS = [
   '/',
   '/index.html',
@@ -21,33 +20,12 @@ const STATIC_ASSETS = [
   '/css/voter.css',
   '/css/responsive.css',
   
-  // Core JavaScript
-  '/js/app.js',
-  
-  // Config modules
-  '/js/config/firebase.js',
-  '/js/config/constants.js',
-  '/js/config/admin-roles.js',
-  '/js/config/credential-types.js',
-  
-  // Utility modules
-  '/js/utils/i18n.js',
-  '/js/utils/ui-helpers.js',
-  '/js/utils/offline.js',
-  
   // Language files
   '/lang/eng.json',
   '/lang/spa.json',
   '/lang/fre.json',
   '/lang/por.json',
   '/lang/twi.json',
-  
-  // HTML components - Gateway and shared
-  '/html/gateway.html',
-  '/html/shared/guidance.html',
-  '/html/shared/guidance-voter.html',
-  '/html/shared/guidance-ec.html',
-  '/html/shared/toasts.html',
   
   // Libraries
   '/libs/fontawesome/all.min.css',
@@ -85,8 +63,8 @@ self.addEventListener('activate', (event) => {
       .then((cacheNames) => {
         return Promise.all(
           cacheNames.map((cacheName) => {
-            // Delete old caches that don't match current version
-            if (cacheName.startsWith('neon-voting-') && cacheName !== STATIC_CACHE && cacheName !== DYNAMIC_CACHE) {
+            // Delete ALL old caches that don't match current version
+            if (cacheName.startsWith('neon-voting-') && cacheName !== STATIC_CACHE) {
               console.log('[Service Worker] Deleting old cache:', cacheName);
               return caches.delete(cacheName);
             }
@@ -100,134 +78,55 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-// Fetch event - serve from cache with network fallback
+// Fetch event - NEVER intercept external resources
 self.addEventListener('fetch', (event) => {
-  const { request } = event;
-  const url = new URL(request.url);
+  const url = new URL(event.request.url);
   
-  // Skip caching for:
-  // 1. Firebase API calls
-  // 2. Netlify functions
-  // 3. External APIs (Twilio, etc.)
-  // 4. Chrome extensions
-  // 5. Firebase CDN (gstatic.com) - includes Firebase SDK modules
-  // 6. ES modules (JavaScript imports)
+  // CRITICAL: Never intercept external domains or Firebase
+  // Let browser handle these directly to avoid CSP violations
   if (
-    url.origin.includes('firebaseio.com') ||
-    url.origin.includes('googleapis.com') ||
-    url.origin.includes('firebase.com') ||
-    url.origin.includes('gstatic.com') ||
+    url.origin !== location.origin ||
+    url.hostname.includes('firebase') ||
+    url.hostname.includes('gstatic') ||
+    url.hostname.includes('googleapis') ||
     url.pathname.startsWith('/.netlify/functions/') ||
-    url.origin.includes('twilio.com') ||
-    url.protocol === 'chrome-extension:' ||
-    request.destination === 'script' && url.pathname.includes('firebase') ||
-    url.pathname.endsWith('.mjs') // ES module files
+    event.request.url.includes('.mjs') ||
+    event.request.url.includes('twilio')
   ) {
-    // Network only for API calls, CDN, and modules - never cache
-    event.respondWith(
-      fetch(request, { mode: 'cors', credentials: 'omit' })
-        .catch((error) => {
-          console.error('[Service Worker] Failed to fetch:', url.href, error);
-          throw error;
-        })
-    );
+    // Don't intercept - let browser fetch directly
     return;
   }
   
-  // Cache strategy for static assets
+  // For local assets only: Cache-first with network fallback
   event.respondWith(
-    caches.match(request)
+    caches.match(event.request)
       .then((cachedResponse) => {
-        // Return cached version if available
         if (cachedResponse) {
-          // Update cache in background for static assets
-          if (STATIC_ASSETS.includes(url.pathname)) {
-            fetch(request)
-              .then((networkResponse) => {
-                if (networkResponse.ok) {
-                  caches.open(STATIC_CACHE).then((cache) => {
-                    cache.put(request, networkResponse);
-                  });
-                }
-              })
-              .catch(() => {
-                // Network failed, but we have cache - no action needed
-              });
-          }
-          
           return cachedResponse;
         }
         
-        // No cache - fetch from network
-        return fetch(request)
+        // Not in cache - fetch from network
+        return fetch(event.request)
           .then((networkResponse) => {
-            // Cache successful responses
-            if (networkResponse.ok && request.method === 'GET') {
-              // Determine cache type based on URL
-              const cacheName = STATIC_ASSETS.includes(url.pathname) 
-                ? STATIC_CACHE 
-                : DYNAMIC_CACHE;
-              
-              // Clone response before caching
-              const responseToCache = networkResponse.clone();
-              
-              caches.open(cacheName).then((cache) => {
-                cache.put(request, responseToCache);
+            // Cache successful responses for next time
+            if (networkResponse && networkResponse.ok) {
+              const responseClone = networkResponse.clone();
+              caches.open(STATIC_CACHE).then((cache) => {
+                cache.put(event.request, responseClone);
               });
             }
-            
             return networkResponse;
           })
           .catch((error) => {
-            console.log('[Service Worker] Fetch failed for:', request.url);
-            
-            // Offline fallback for navigation requests
-            if (request.mode === 'navigate') {
+            console.error('[Service Worker] Fetch failed:', event.request.url, error);
+            // Return offline page for navigation requests
+            if (event.request.mode === 'navigate') {
               return caches.match('/index.html');
             }
-            
-            // Return offline response for other requests
-            return new Response(
-              JSON.stringify({
-                error: 'offline',
-                message: 'You are currently offline. Please check your internet connection.'
-              }),
-              {
-                status: 503,
-                statusText: 'Service Unavailable',
-                headers: new Headers({
-                  'Content-Type': 'application/json'
-                })
-              }
-            );
+            throw error;
           });
       })
   );
-});
-
-// Message event - handle messages from clients
-self.addEventListener('message', (event) => {
-  if (event.data && event.data.type === 'SKIP_WAITING') {
-    self.skipWaiting();
-  }
-  
-  if (event.data && event.data.type === 'CACHE_URLS') {
-    event.waitUntil(
-      caches.open(DYNAMIC_CACHE).then((cache) => {
-        return cache.addAll(event.data.urls);
-      })
-    );
-  }
-  
-  if (event.data && event.data.type === 'CLEAR_CACHE') {
-    event.waitUntil(
-      caches.keys().then((cacheNames) => {
-        return Promise.all(
-          cacheNames.map((cacheName) => caches.delete(cacheName))
-        );
-      })
-    );
-  }
 });
 
 console.log('[Service Worker] Script loaded');

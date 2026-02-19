@@ -1,7 +1,7 @@
 // Neon Voting Platform - Service Worker
 // Provides offline functionality and caching for improved performance
 
-const CACHE_VERSION = 'neon-voting-v1-20260219';
+const CACHE_VERSION = 'neon-voting-v2-20260219';
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 const DYNAMIC_CACHE = `${CACHE_VERSION}-dynamic`;
 
@@ -110,7 +110,8 @@ self.addEventListener('fetch', (event) => {
   // 2. Netlify functions
   // 3. External APIs (Twilio, etc.)
   // 4. Chrome extensions
-  // 5. Firebase CDN (gstatic.com)
+  // 5. Firebase CDN (gstatic.com) - includes Firebase SDK modules
+  // 6. ES modules (JavaScript imports)
   if (
     url.origin.includes('firebaseio.com') ||
     url.origin.includes('googleapis.com') ||
@@ -118,10 +119,18 @@ self.addEventListener('fetch', (event) => {
     url.origin.includes('gstatic.com') ||
     url.pathname.startsWith('/.netlify/functions/') ||
     url.origin.includes('twilio.com') ||
-    url.protocol === 'chrome-extension:'
+    url.protocol === 'chrome-extension:' ||
+    request.destination === 'script' && url.pathname.includes('firebase') ||
+    url.pathname.endsWith('.mjs') // ES module files
   ) {
-    // Network only for API calls and CDN
-    event.respondWith(fetch(request));
+    // Network only for API calls, CDN, and modules - never cache
+    event.respondWith(
+      fetch(request, { mode: 'cors', credentials: 'omit' })
+        .catch((error) => {
+          console.error('[Service Worker] Failed to fetch:', url.href, error);
+          throw error;
+        })
+    );
     return;
   }
   

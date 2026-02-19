@@ -564,15 +564,18 @@ export async function editVoterModal(voterId) {
     }
     
     const voter = voterSnap.data();
-    const currentEmail = decodeURIComponent(voterId);
+    const currentEmail = voter.email || decodeURIComponent(voterId);
     
     createModal(
       `<i class="fas fa-edit"></i> Edit Voter: ${voter.name}`,
       `
         <div style="display: flex; flex-direction: column; gap: 15px;">
           <div>
-            <label class="label">Current Email</label>
-            <input class="input" value="${escapeHtml(currentEmail)}" disabled style="background: rgba(255,255,255,0.05);">
+            <label class="label">Email Address *</label>
+            <input id="editVoterEmail" class="input" value="${escapeHtml(currentEmail)}" placeholder="voter@example.com">
+            <small class="subtext" style="color: #ffc107;">
+              <i class="fas fa-exclamation-triangle"></i> Changing email will update the voter's login credential
+            </small>
           </div>
           <div>
             <label class="label">Full Name *</label>
@@ -620,6 +623,7 @@ export async function updateVoter(voterId) {
   // ✅ PATCH 2: Check edit lock before allowing voter update
   if (checkEditLock(window.currentOrgData)) return;
   
+  const newEmail = document.getElementById('editVoterEmail')?.value.trim();
   const name = document.getElementById('editVoterName')?.value.trim();
   const dob = document.getElementById('editVoterDob')?.value.trim();
   const phone = document.getElementById('editVoterPhone')?.value.trim();
@@ -629,21 +633,87 @@ export async function updateVoter(voterId) {
     return;
   }
   
+  if (!newEmail) {
+    showToast('Email is required', 'error');
+    return;
+  }
+  
+  // Validate email format
+  if (!validateEmail(newEmail)) {
+    showToast('Invalid email format', 'error');
+    return;
+  }
+  
   try {
-    const voterRef = doc(db, "organizations", window.currentOrgId, "voters", voterId);
-    const updateData = {
-      name: name,
-      phone: normalizePhoneE164(phone || ''),
-      updatedAt: serverTimestamp()
-    };
+    const oldVoterRef = doc(db, "organizations", window.currentOrgId, "voters", voterId);
+    const oldVoterSnap = await getDoc(oldVoterRef);
     
-    if (dob) {
-      updateData.dateOfBirth = dob;
+    if (!oldVoterSnap.exists()) {
+      showToast('Voter not found', 'error');
+      return;
     }
     
-    await updateDoc(voterRef, updateData);
+    const oldVoter = oldVoterSnap.data();
+    const oldEmail = oldVoter.email || decodeURIComponent(voterId);
+    const newVoterId = encodeURIComponent(newEmail.toLowerCase());
     
-    showToast('Voter updated successfully!', 'success');
+    // Check if email changed
+    if (newEmail.toLowerCase() !== oldEmail.toLowerCase()) {
+      // Email changed - need to create new voter document with new email as ID
+      
+      // Check if new email already exists
+      const newVoterRef = doc(db, "organizations", window.currentOrgId, "voters", newVoterId);
+      const existingSnap = await getDoc(newVoterRef);
+      
+      if (existingSnap.exists() && !existingSnap.data().isReplaced) {
+        showToast('A voter with this email already exists', 'error');
+        return;
+      }
+      
+      // Create new voter document with all data from old voter
+      const newVoterData = {
+        ...oldVoter,
+        email: newEmail.toLowerCase(),
+        name: name,
+        phone: normalizePhoneE164(phone || ''),
+        updatedAt: serverTimestamp()
+      };
+      
+      if (dob) {
+        newVoterData.dateOfBirth = dob;
+      } else {
+        delete newVoterData.dateOfBirth;
+      }
+      
+      // Create new voter document
+      await setDoc(newVoterRef, newVoterData);
+      
+      // If voter hasn't voted yet, delete old document. If they voted, mark as replaced
+      if (!oldVoter.hasVoted) {
+        await deleteDoc(oldVoterRef);
+      } else {
+        await updateDoc(oldVoterRef, { isReplaced: true, replacedBy: newEmail.toLowerCase(), replacedAt: serverTimestamp() });
+      }
+      
+      showToast('Voter email updated successfully!', 'success');
+    } else {
+      // Email didn't change - just update the existing document
+      const updateData = {
+        name: name,
+        phone: normalizePhoneE164(phone || ''),
+        email: newEmail.toLowerCase(),
+        updatedAt: serverTimestamp()
+      };
+      
+      if (dob) {
+        updateData.dateOfBirth = dob;
+      }
+      
+      await updateDoc(oldVoterRef, updateData);
+      
+      showToast('Voter updated successfully!', 'success');
+    }
+    
     document.querySelector('.modal-overlay')?.remove();
     loadECVoters();
   } catch(e) {

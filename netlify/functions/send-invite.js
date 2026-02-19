@@ -98,7 +98,12 @@ exports.handler = async (event) => {
   let html = "";
 
   if (recipientType === "ec") {
-    if (emailTemplate?.subject && emailTemplate?.body) {
+    if (emailTemplate?.subject && emailTemplate?.html) {
+      // Use full HTML template directly (new format)
+      subject = emailTemplate.subject;
+      html = emailTemplate.html;
+    } else if (emailTemplate?.subject && emailTemplate?.body) {
+      // Legacy text template with basic wrapper
       subject = emailTemplate.subject;
       html = renderTemplateEmail(subject, emailTemplate.body);
     } else {
@@ -180,7 +185,12 @@ exports.handler = async (event) => {
           </div>
         </div>
       `;
+    } else if (emailTemplate?.subject && emailTemplate?.html) {
+      // Use full HTML template directly (new format)
+      subject = emailTemplate.subject;
+      html = emailTemplate.html;
     } else if (emailTemplate?.subject && emailTemplate?.body) {
+      // Legacy text template with basic wrapper
       subject = emailTemplate.subject;
       html = renderTemplateEmail(subject, emailTemplate.body);
     } else {

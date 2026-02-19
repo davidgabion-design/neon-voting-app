@@ -272,6 +272,16 @@ async function sendEmail(notificationType, recipientEmail, recipientName, orgId,
       html = generateElectionRejectedEmail(recipientName, orgName, variables.rejectionReason, appUrl);
       break;
 
+    case 'voting_reminder':
+      subject = `⏰ Voting Reminder - ${orgName}`;
+      html = generateVotingReminderEmail(recipientName, orgName, orgId, variables.votingLink || `${appUrl}?role=voter&org=${orgId}`, 'reminder');
+      break;
+
+    case 'voting_open':
+      subject = `🗳️ Voting Is Now Open! - ${orgName}`;
+      html = generateVotingReminderEmail(recipientName, orgName, orgId, variables.votingLink || `${appUrl}?role=voter&org=${orgId}`, 'open');
+      break;
+
     default:
       return { ok: false, error: 'Unknown notification type' };
   }
@@ -684,4 +694,67 @@ function generateElectionRejectedEmail(ecName, orgName, rejectionReason, appUrl)
     </p>
   `;
   return wrapEmail(inner, '#ff6b6b');
+}
+
+function generateVotingReminderEmail(name, orgName, orgId, votingLink, reminderType = 'reminder') {
+  const isOpen = reminderType === 'open';
+  const icon = isOpen ? '🗳️' : '⏰';
+  const title = isOpen ? 'Voting Is Now Open!' : 'Voting Reminder';
+  const accentColor = isOpen ? '#00ffaa' : '#ffaa00';
+  const borderColor = isOpen ? 'rgba(0,255,170,0.4)' : 'rgba(255,170,0,0.4)';
+  const glowColor = isOpen ? 'rgba(0,255,170,0.2)' : 'rgba(255,170,0,0.2)';
+  const message = isOpen
+    ? `Voting is now <strong style="color:#00ffaa;">LIVE</strong>! Cast your vote for <strong style="color:#ffffff;">${orgName}</strong> now before it closes.`
+    : `Don't forget — voting is open for <strong style="color:#ffffff;">${orgName}</strong>. Click below to cast your vote now!`;
+
+  const inner = `
+    <!-- Header Icon -->
+    <div style="text-align:center;margin-bottom:28px;">
+      <div style="display:inline-block;background:rgba(0,0,0,0.3);border:2px solid ${borderColor};border-radius:50%;width:72px;height:72px;line-height:72px;font-size:34px;margin-bottom:14px;box-shadow:0 0 24px ${glowColor};">
+        ${icon}
+      </div>
+      <h1 style="margin:0;font-size:28px;font-weight:700;color:${accentColor};letter-spacing:1px;text-shadow:0 0 24px ${glowColor};">
+        ${title}
+      </h1>
+      <p style="margin:8px 0 0;font-size:13px;color:#3a5a7a;letter-spacing:1px;text-transform:uppercase;">
+        ${orgName}
+      </p>
+    </div>
+
+    ${name ? `<p style="margin:0 0 20px;font-size:15px;color:#c8e0f0;">Hi <strong style="color:${accentColor};">${name}</strong>,</p>` : ''}
+
+    <!-- Message Box -->
+    <div style="background:rgba(0,0,0,0.35);border:1px solid ${borderColor};border-radius:12px;padding:20px 22px;margin-bottom:28px;text-align:center;">
+      <p style="margin:0;font-size:16px;color:#d0eaff;line-height:1.8;">
+        ${message}
+      </p>
+    </div>
+
+    <!-- CTA Button -->
+    <div style="text-align:center;margin-bottom:28px;">
+      <a href="${votingLink}"
+         style="display:inline-block;background:linear-gradient(135deg,${accentColor} 0%,#00C3FF 100%);color:#050816;padding:16px 44px;border-radius:30px;text-decoration:none;font-weight:700;font-size:17px;letter-spacing:0.5px;box-shadow:0 0 28px ${glowColor};">
+        🗳️ &nbsp; Go to Voting Portal
+      </a>
+    </div>
+
+    <!-- Divider -->
+    <div style="height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.08),transparent);margin-bottom:20px;"></div>
+
+    <!-- Org Info -->
+    <table width="100%" cellpadding="0" cellspacing="0">
+      <tr>
+        <td style="padding:4px 0;">
+          <span style="font-size:12px;color:#3a5a7a;">Organisation ID:&nbsp;</span>
+          <span style="font-size:12px;color:#00C3FF;font-family:monospace;letter-spacing:1px;">${orgId}</span>
+        </td>
+      </tr>
+      <tr>
+        <td style="padding:4px 0;">
+          <span style="font-size:12px;color:#3a5a7a;">If you have questions, contact your Election Commissioner.</span>
+        </td>
+      </tr>
+    </table>
+  `;
+  return wrapEmail(inner, accentColor);
 }

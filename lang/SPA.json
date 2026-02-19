@@ -198,7 +198,7 @@
   "created_at": "Creado",
   "edit_administrator": "Editar Administrador",
   "full_name": "Nombre Completo",
-  "enter_full_name": "Ingrese el nombre completo del administrador",
+  "enter_full_name": "Ingrese el nombre completo",
   "enter_email": "admin@ejemplo.com",
   "password": "Contraseña",
   "enter_password": "Ingrese contraseña",

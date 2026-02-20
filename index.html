@@ -33,6 +33,94 @@
   <link rel="stylesheet" href="/css/dashboard.css">
   <link rel="stylesheet" href="/css/voter.css">
   <link rel="stylesheet" href="/css/responsive.css">
+  
+  <!-- Global Error Handlers - Must load before any other scripts -->
+  <script>
+    // GLOBAL ERROR HANDLERS - Catches crashes on remote devices
+    (function() {
+      const APP_VERSION = 'v1.2.0-20260220'; // Cache buster version
+      window.NEON_APP_VERSION = APP_VERSION;
+      
+      // Store errors for debugging
+      window.NEON_ERRORS = [];
+      
+      function logError(source, message, filename, lineno, colno, error) {
+        const errorInfo = {
+          timestamp: new Date().toISOString(),
+          source: source,
+          message: message,
+          filename: filename || 'unknown',
+          line: lineno || 0,
+          column: colno || 0,
+          stack: error?.stack || 'No stack trace',
+          userAgent: navigator.userAgent
+        };
+        
+        window.NEON_ERRORS.push(errorInfo);
+        console.error(`[${source}] ${message}`, errorInfo);
+        
+        // Display error in UI
+        showErrorInUI(errorInfo);
+        
+        return errorInfo;
+      }
+      
+      function showErrorInUI(errorInfo) {
+        // Create error container if doesn't exist
+        let errorContainer = document.getElementById('neon-global-errors');
+        if (!errorContainer) {
+          errorContainer = document.createElement('div');
+          errorContainer.id = 'neon-global-errors';
+          errorContainer.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: #d32f2f;
+            color: white;
+            padding: 16px;
+            z-index: 999999;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 200px;
+            overflow-y: auto;
+          `;
+          document.body?.appendChild(errorContainer);
+        }
+        
+        const errorBlock = document.createElement('div');
+        errorBlock.style.cssText = 'margin-bottom: 8px; border-bottom: 1px solid rgba(255,255,255,0.3); padding-bottom: 8px;';
+        errorBlock.innerHTML = `
+          <strong>[${errorInfo.source}]</strong> ${errorInfo.message}<br>
+          <small>File: ${errorInfo.filename}:${errorInfo.line}:${errorInfo.column}</small><br>
+          <small>Stack: ${errorInfo.stack.substring(0, 200)}...</small>
+        `;
+        
+        errorContainer.appendChild(errorBlock);
+      }
+      
+      // Catch synchronous errors
+      window.onerror = function(message, filename, lineno, colno, error) {
+        logError('window.onerror', message, filename, lineno, colno, error);
+        return false; // Let default handler run too
+      };
+      
+      // Catch unhandled promise rejections
+      window.addEventListener('unhandledrejection', function(event) {
+        const error = event.reason;
+        logError(
+          'unhandledrejection',
+          error?.message || String(error),
+          error?.fileName,
+          error?.lineNumber,
+          error?.columnNumber,
+          error
+        );
+      });
+      
+      console.log(`✅ Global error handlers installed (${APP_VERSION})`);
+    })();
+  </script>
 </head>
 
 <body>
@@ -135,73 +223,68 @@
         } catch (error) {
           console.error('❌ Failed to load app modules:', error);
           
-          // Check if it's a Firebase/gstatic module loading error
-          if (error.message && (error.message.includes('gstatic.com') || error.message.includes('firebase'))) {
-            document.getElementById('loadingOverlay').innerHTML = `
-              <div style="text-align:center;max-width:500px;margin:0 auto;padding:30px;">
-                <div style="font-size:60px;margin-bottom:20px;">⚠️</div>
-                <h2 style="color:#ff6b6b;margin-bottom:15px;">Firebase Module Loading Error</h2>
-                <p style="color:#b0b0b0;line-height:1.6;margin-bottom:25px;">
-                  The app couldn't load Firebase modules from the CDN. This is usually caused by:
-                </p>
-                <ul style="text-align:left;color:#888;margin-bottom:25px;line-height:1.8;">
-                  <li>Service Worker cache interference</li>
-                  <li>Network connectivity issues</li>
-                  <li>Browser extension blocking CDN</li>
-                </ul>
-                <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;">
-                  <button onclick="fixServiceWorkerAndReload()" 
-                          style="background:linear-gradient(135deg,#667eea,#764ba2);color:white;border:none;padding:12px 24px;border-radius:8px;font-size:16px;font-weight:600;cursor:pointer;">
-                    <i class="fas fa-tools"></i> Fix & Reload
-                  </button>
-                  <button onclick="location.reload()" 
-                          style="background:rgba(0,255,170,0.2);color:#00ffaa;border:1px solid #00ffaa;padding:12px 24px;border-radius:8px;font-size:16px;font-weight:600;cursor:pointer;">
-                    <i class="fas fa-redo"></i> Just Reload
-                  </button>
-                </div>
-                <p style="color:#666;font-size:13px;margin-top:25px;">
-                  Error: ${error.message}
-                </p>
+          // Enhanced error display with detailed information
+          document.getElementById('loadingOverlay').innerHTML = `
+            <div style="text-align:center;max-width:600px;margin:0 auto;padding:30px;">
+              <div style="font-size:60px;margin-bottom:20px;">⚠️</div>
+              <h2 style="color:#ff6b6b;margin-bottom:15px;">Failed to Load Application</h2>
+              <p style="color:#b0b0b0;line-height:1.6;margin-bottom:20px;">
+                The app encountered an error during initialization.
+              </p>
+              
+              <div style="background:#ffebee;border-left:4px solid #d32f2f;padding:16px;margin:20px 0;text-align:left;border-radius:4px;">
+                <strong style="color:#d32f2f;">Error Details:</strong><br>
+                <code style="display:block;margin-top:8px;font-size:11px;word-break:break-all;color:#333;">
+                  ${error.message}<br><br>
+                  ${error.stack ? error.stack.substring(0, 300) : 'No stack trace'}
+                </code>
               </div>
-            `;
-            
-            // Add fix function
-            window.fixServiceWorkerAndReload = async function() {
-              try {
-                // Unregister all service workers
-                const registrations = await navigator.serviceWorker.getRegistrations();
-                for (let registration of registrations) {
-                  await registration.unregister();
-                  console.log('Unregistered Service Worker:', registration.scope);
-                }
-                
-                // Clear all caches
-                const cacheNames = await caches.keys();
-                for (let cacheName of cacheNames) {
-                  await caches.delete(cacheName);
-                  console.log('Deleted cache:', cacheName);
-                }
-                
-                // Reload without cache
-                location.reload(true);
-              } catch (fixError) {
-                console.error('Fix failed:', fixError);
-                alert('Fix failed. Try manually: Ctrl+Shift+Delete to clear cache, then reload.');
-              }
-            };
-            
-            return; // Don't proceed with initialization
-          }
-          
-          // Other error - show generic message
-          document.getElementById('loadingText').innerHTML = `
-            <span style="color:#ff6b6b;">Failed to load application</span><br>
-            <span style="font-size:13px;color:#888;">${error.message}</span><br>
-            <button onclick="location.reload()" style="margin-top:15px;padding:8px 16px;background:#00ffaa;color:#0a0a1a;border:none;border-radius:4px;cursor:pointer;">
-              Reload
-            </button>
+              
+              <p style="color:#888;font-size:14px;margin-bottom:16px;">Common causes:</p>
+              <ul style="text-align:left;color:#888;font-size:13px;margin-bottom:25px;line-height:1.8;">
+                <li>Corrupted browser cache or Service Worker</li>
+                <li>Network connectivity issues</li>
+                <li>Browser extension blocking scripts</li>
+                <li>Outdated cached version</li>
+              </ul>
+              
+              <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-bottom:16px;">
+                <button onclick="location.reload()" 
+                        style="background:#1976d2;color:white;border:none;padding:12px 24px;border-radius:6px;font-size:14px;font-weight:600;cursor:pointer;">
+                  <i class="fas fa-redo"></i> Reload Page
+                </button>
+                <button onclick="localStorage.setItem('NEON_DISABLE_SW','1');location.reload();" 
+                        style="background:#d32f2f;color:white;border:none;padding:12px 24px;border-radius:6px;font-size:14px;font-weight:600;cursor:pointer;">
+                  <i class="fas fa-ban"></i> Disable Cache & Retry
+                </button>
+              </div>
+              
+              <details style="margin-top:20px;text-align:left;">
+                <summary style="cursor:pointer;color:#666;font-size:12px;">Advanced Troubleshooting</summary>
+                <div style="margin-top:12px;padding:12px;background:#f5f5f5;border-radius:4px;font-size:11px;color:#333;">
+                  <p><strong>Manual Steps:</strong></p>
+                  <ol style="line-height:1.8;">
+                    <li>Press Ctrl+Shift+Delete (Cmd+Shift+Delete on Mac)</li>
+                    <li>Select "Cached images and files"</li>
+                    <li>Select "All time" for time range</li>
+                    <li>Click "Clear data"</li>
+                    <li>Close ALL browser tabs/windows</li>
+                    <li>Reopen browser and try again</li>
+                  </ol>
+                  <p style="margin-top:12px;"><strong>Still having issues?</strong> Try:</p>
+                  <ul style="line-height:1.8;">
+                    <li>Use Incognito/Private browsing mode</li>
+                    <li>Try a different browser (Chrome, Firefox, Edge)</li>
+                    <li>Disable browser extensions temporarily</li>
+                    <li>Contact support with error details above</li>
+                  </ul>
+                </div>
+              </details>
+            </div>
           `;
-          return;
+          
+          // Re-throw to trigger global error handler
+          throw error;
         }
         
         // Step 3: Setup gateway button handlers
@@ -574,63 +657,64 @@
   <script src="/libs/jspdf.plugin.autotable.min.js"></script>
   
   <!-- Service Worker Registration - TEMPORARILY DISABLED -->
-  <!-- 
-    Service Worker disabled to eliminate cache-based failures during debugging.
-    Re-enable after confirming deep-link routing works across all devices.
-    
-    REASON: Service Worker aggressive caching was causing:
-    - "Failed to load application" errors on fresh devices
-    - Stale cached code served even after deployment
-    - Deep-link routing failures from voter invite links
-    
-    TO RE-ENABLE: Uncomment the script below after verification
-  -->
+  <!-- Service Worker with Kill Switch and Cache Versioning -->
   <script>
-    // TEMPORARY: Unregister any existing Service Workers on page load
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.getRegistrations().then((registrations) => {
-        for (let registration of registrations) {
-          registration.unregister().then(() => {
-            console.log('🔧 Service Worker unregistered (temporarily disabled for debugging)');
-          });
-        }
-      });
-    }
-    
-    /* SERVICE WORKER REGISTRATION - COMMENTED OUT TEMPORARILY
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/sw.js')
-          .then((registration) => {
-            console.log('✓ Service Worker registered:', registration.scope);
-            
-            // Check for updates periodically
-            setInterval(() => {
-              registration.update();
-            }, 60000); // Check every minute
-            
-            // Listen for updates
-            registration.addEventListener('updatefound', () => {
-              const newWorker = registration.installing;
-              newWorker.addEventListener('statechange', () => {
-                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                  // New service worker available
-                  console.log('✓ New version available');
-                  if (typeof window.showToast === 'function') {
-                    window.showToast('App update available! Refresh to update.', 'info');
-                  }
-                }
-              });
+      // Check for kill switch
+      const disableSW = localStorage.getItem('NEON_DISABLE_SW') === '1';
+      
+      if (disableSW) {
+        console.log('🔧 Service Worker disabled via kill switch (NEON_DISABLE_SW=1)');
+        // Unregister all existing service workers
+        navigator.serviceWorker.getRegistrations().then((registrations) => {
+          for (let registration of registrations) {
+            registration.unregister().then(() => {
+              console.log('🔧 Service Worker unregistered due to kill switch');
             });
-          })
-          .catch((error) => {
-            console.log('✗ Service Worker registration failed:', error);
-          });
-      });
+          }
+        });
+      } else {
+        // Auto-unregister old service workers (cache busting)
+        navigator.serviceWorker.getRegistrations().then((registrations) => {
+          for (let registration of registrations) {
+            registration.unregister().then(() => {
+              console.log('🔧 Old Service Worker unregistered for cache refresh');
+            });
+          }
+        });
+        
+        // Re-register with version parameter for cache busting
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register(`/sw.js?v=${window.NEON_APP_VERSION}`)
+            .then((registration) => {
+              console.log(`✅ Service Worker registered (${window.NEON_APP_VERSION}):`, registration.scope);
+              
+              // Check for updates periodically
+              setInterval(() => {
+                registration.update();
+              }, 60000); // Check every minute
+              
+              // Listen for updates
+              registration.addEventListener('updatefound', () => {
+                const newWorker = registration.installing;
+                newWorker.addEventListener('statechange', () => {
+                  if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                    console.log('✅ New app version available');
+                    if (typeof window.showToast === 'function') {
+                      window.showToast('App update available! Refresh to update.', 'info');
+                    }
+                  }
+                });
+              });
+            })
+            .catch((error) => {
+              console.warn('⚠️ Service Worker registration failed:', error);
+            });
+        });
+      }
     } else {
       console.warn('⚠️ Service Workers not supported in this browser');
     }
-    */
   </script>
 </body>
 </html>

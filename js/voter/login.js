@@ -14,6 +14,7 @@ import {
 } from '../utils/validation.js';
 import { showToast, showScreen, createModal } from '../utils/ui-helpers.js';
 import { updateSession } from '../utils/session.js';
+import { safeJsonParse, getStorageJson, setStorageJson } from '../utils/json-helpers.js';
 import { writeAudit } from '../features/audit.js';
 import { loadVotingBallot } from './voting.js';
 import { showVoterLiveDashboard } from './results.js';
@@ -82,10 +83,8 @@ export function loadVoterSession() {
 
   // Priority 2: Check localStorage
   try {
-    const stored = localStorage.getItem(SESSION_KEY);
-    if (stored) {
-      const session = JSON.parse(stored);
-      
+    const session = getStorageJson(SESSION_KEY, null);
+    if (session) {
       // Validate session structure
       if (!session.orgId || !session.voterDocId || !session.expiresAt) {
         console.error('[loadVoterSession] Invalid session structure:', session);
@@ -1251,7 +1250,11 @@ export async function restoreVoterSession() {
       return false; // No session to restore
     }
 
-    const voterData = JSON.parse(voterDataStr);
+    const voterData = safeJsonParse(voterDataStr, null);
+    if (!voterData) {
+      console.warn('[restoreVoterSession] Invalid voter data in sessionStorage');
+      return false;
+    }
 
     // If voter is in readonly mode (has already voted), show dashboard
     if (voterViewMode === 'readonly' && voterData.hasVoted) {

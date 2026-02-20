@@ -38,7 +38,7 @@
   <script>
     // GLOBAL ERROR HANDLERS - Catches crashes on remote devices
     (function() {
-      const APP_VERSION = 'v1.2.0-20260220'; // Cache buster version
+      const APP_VERSION = 'v1.2.1-20260220'; // Cachebuster version
       window.NEON_APP_VERSION = APP_VERSION;
       
       // Store errors for debugging
@@ -216,9 +216,10 @@
         // Step 2: Initialize Firebase and app modules (slower - CDN imports)
         document.getElementById('loadingText').textContent = 'Initializing system...';
         
-        // Dynamic import allows us to control when Firebase loads
+        // Dynamic import with cache-busting to prevent stale module loading
+        const APP_VERSION = 'v1.2.1-20260220';
         try {
-          await import('/js/app.js');
+          await import(`/js/app.js?v=${APP_VERSION}`);
           console.log('✅ App initialized');
         } catch (error) {
           console.error('❌ Failed to load app modules:', error);
@@ -637,7 +638,10 @@
         
       } catch (error) {
         console.error('❌ Initialization failed:', error);
-        document.getElementById('loadingText').innerHTML = '<span style="color: #ff4444;">Error: ' + error.message + '</span><br><button onclick="location.reload()" style="margin-top:10px;padding:8px 16px;background:#9d00ff;color:white;border:none;border-radius:4px;cursor:pointer;">Reload</button>';
+        const loadingText = document.getElementById('loadingText');
+        if (loadingText) {
+          loadingText.innerHTML = '<span style="color: #ff4444;">Error: ' + error.message + '</span><br><button onclick="location.reload()" style="margin-top:10px;padding:8px 16px;background:#9d00ff;color:white;border:none;border-radius:4px;cursor:pointer;">Reload</button>';
+        }
       }
     }
     

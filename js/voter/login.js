@@ -1,4 +1,96 @@
 /**
+ * VOTER SESSION MANAGEMENT
+ * Uses localStorage (persistent across component loads) + window object (in-memory)
+ */
+
+/**
+ * Save voter session to localStorage and window
+ */
+function saveVoterSession(orgId, voterDocId, voterData) {
+  const sessionData = {
+    orgId: String(orgId),
+    voterDocId: String(voterDocId),
+    voterName: voterData?.name || 'Voter',
+    voterEmail: voterData?.email || '',
+    voterPhone: voterData?.phone || '',
+    loginTimestamp: Date.now(),
+    expiresAt: Date.now() + (30 * 60 * 1000) // 30 minutes
+  };
+
+  // Store in localStorage (persists across component loads)
+  localStorage.setItem('neon_voter_session', JSON.stringify(sessionData));
+  
+  // Store in window object (fast access)
+  window.neonVoterSession = sessionData;
+  
+  console.log('[saveVoterSession] ✅ Session saved:', {
+    orgId: sessionData.orgId,
+    voterDocId: sessionData.voterDocId,
+    voterName: sessionData.voterName
+  });
+}
+
+/**
+ * Load voter session from localStorage/window
+ */
+export function loadVoterSession() {
+  // Try window object first (fastest)
+  if (window.neonVoterSession) {
+    const session = window.neonVoterSession;
+    if (session.expiresAt > Date.now()) {
+      return session;
+    } else {
+      console.log('[loadVoterSession] ⚠️ Window session expired');
+      clearVoterSession();
+      return null;
+    }
+  }
+
+  // Fallback to localStorage
+  const stored = localStorage.getItem('neon_voter_session');
+  if (stored) {
+    try {
+      const session = JSON.parse(stored);
+      if (session.expiresAt > Date.now()) {
+        console.log('[loadVoterSession] ✅ Restored from localStorage:', session.voterDocId);
+        window.neonVoterSession = session; // Hydrate window object
+        return session;
+      } else {
+        console.log('[loadVoterSession] ⚠️ localStorage session expired');
+        clearVoterSession();
+      }
+    } catch (err) {
+      console.error('[loadVoterSession] Failed to parse session:', err);
+      clearVoterSession();
+    }
+  }
+
+  console.log('[loadVoterSession] ❌ No valid session found');
+  return null;
+}
+
+/**
+ * Clear voter session
+ */
+export function clearVoterSession() {
+  localStorage.removeItem('neon_voter_session');
+  delete window.neonVoterSession;
+  console.log('[clearVoterSession] ✅ Session cleared');
+}
+
+/**
+ * Extend session expiry (call when user interacts)
+ */
+export function extendVoterSession() {
+  const session = loadVoterSession();
+  if (session) {
+    session.expiresAt = Date.now() + (30 * 60 * 1000);
+    localStorage.setItem('neon_voter_session', JSON.stringify(session));
+    window.neonVoterSession = session;
+  }
+}
+
+/**
  * Show OTP input and handle validation
  * @param {string} orgId
  * @param {string} voterDocId
@@ -100,7 +192,7 @@ window.validateVoterOTP = async function(orgId, voterDocId) {
         return;
       }
       
-      // Successful login - load ballot
+      // Successful login - save session and load ballot
       window.currentOrgId = orgId;
       window.currentOrgData = orgData;
       window.voterData = voterData;
@@ -109,6 +201,9 @@ window.validateVoterOTP = async function(orgId, voterDocId) {
       sessionStorage.setItem('voterOrgId', orgId);
       sessionStorage.setItem('voterDocId', voterDocId);
       sessionStorage.setItem('voterData', JSON.stringify(voterData));
+      
+      // ✅ Save to localStorage for component persistence
+      saveVoterSession(orgId, voterDocId, voterData);
       
       await writeAudit(
         orgId,
@@ -1144,3 +1239,8 @@ if (typeof window !== 'undefined') {
     }
   });
 }
+
+// Expose session management functions globally
+window.loadVoterSession = loadVoterSession;
+window.clearVoterSession = clearVoterSession;
+window.extendVoterSession = extendVoterSession;

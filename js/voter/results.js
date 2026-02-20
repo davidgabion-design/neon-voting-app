@@ -22,11 +22,33 @@ let voterSession = null;
 let session = {};
 let voterCountdownInterval = null;
 
-// Rebuild voter session from stored globals/sessionStorage if missing
+// Rebuild voter session from localStorage/window/sessionStorage
 function hydrateVoterSession() {
   if (voterSession) return voterSession;
 
   try {
+    // Priority 1: Try localStorage-based session (most reliable)
+    if (window.loadVoterSession) {
+      const lsSession = window.loadVoterSession();
+      if (lsSession) {
+        voterSession = {
+          orgId: lsSession.orgId,
+          voterDocId: lsSession.voterDocId,
+          voterKey: lsSession.voterDocId,
+          email: lsSession.voterEmail || '',
+          phone: lsSession.voterPhone || '',
+          voterData: {
+            name: lsSession.voterName,
+            email: lsSession.voterEmail,
+            phone: lsSession.voterPhone
+          }
+        };
+        console.log('[hydrateVoterSession] ✅ Loaded from localStorage:', voterSession.voterDocId);
+        return voterSession;
+      }
+    }
+
+    // Priority 2: Fallback to window/sessionStorage (legacy)
     const orgId = window.currentOrgId || sessionStorage.getItem('voterOrgId');
     const voterDocId = window.voterDocId || sessionStorage.getItem('voterDocId');
     const voterData = window.voterData || JSON.parse(sessionStorage.getItem('voterData') || '{}');
@@ -40,9 +62,10 @@ function hydrateVoterSession() {
         phone: voterData?.phone || '',
         voterData
       };
+      console.log('[hydrateVoterSession] ✅ Loaded from window/sessionStorage:', voterSession.voterDocId);
     }
   } catch (e) {
-    console.warn('hydrateVoterSession failed', e);
+    console.warn('[hydrateVoterSession] Failed:', e);
   }
 
   return voterSession;
@@ -145,7 +168,7 @@ export async function submitVote() {
 
     await writeAudit(voterSession.orgId, "VOTE_SUBMITTED", voteDocId, { positions: Object.keys(choices).length });
 
-    // Clear voter session (in-memory and sessionStorage)
+    // Clear voter session (in-memory and all storage)
     voterSession = null;
     clearSelectedCandidates();
     session.voterSession = null;
@@ -155,6 +178,11 @@ export async function submitVote() {
     sessionStorage.removeItem('voterViewMode');
     sessionStorage.removeItem('voterOrgId');
     sessionStorage.removeItem('voterData');
+    
+    // Clear localStorage session
+    if (window.clearVoterSession) {
+      window.clearVoterSession();
+    }
 
     showToast('✅ Vote submitted successfully!', 'success');
     showScreen('gatewayScreen');

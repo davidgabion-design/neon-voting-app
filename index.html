@@ -573,9 +573,31 @@
   <script src="/libs/jspdf.umd.min.js"></script>
   <script src="/libs/jspdf.plugin.autotable.min.js"></script>
   
-  <!-- Service Worker Registration for Offline Support -->
+  <!-- Service Worker Registration - TEMPORARILY DISABLED -->
+  <!-- 
+    Service Worker disabled to eliminate cache-based failures during debugging.
+    Re-enable after confirming deep-link routing works across all devices.
+    
+    REASON: Service Worker aggressive caching was causing:
+    - "Failed to load application" errors on fresh devices
+    - Stale cached code served even after deployment
+    - Deep-link routing failures from voter invite links
+    
+    TO RE-ENABLE: Uncomment the script below after verification
+  -->
   <script>
-    // Register Service Worker for offline functionality and caching
+    // TEMPORARY: Unregister any existing Service Workers on page load
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistrations().then((registrations) => {
+        for (let registration of registrations) {
+          registration.unregister().then(() => {
+            console.log('🔧 Service Worker unregistered (temporarily disabled for debugging)');
+          });
+        }
+      });
+    }
+    
+    /* SERVICE WORKER REGISTRATION - COMMENTED OUT TEMPORARILY
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
         navigator.serviceWorker.register('/sw.js')
@@ -608,6 +630,7 @@
     } else {
       console.warn('⚠️ Service Workers not supported in this browser');
     }
+    */
   </script>
 </body>
 </html>

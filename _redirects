@@ -1,0 +1,28 @@
+# Netlify SPA Redirect Configuration
+# This ensures all routes fall back to index.html for client-side routing
+# Critical for deep-link support (voter invite links, EC links, etc.)
+
+# Netlify Functions - must be processed first
+/.netlify/*  /.netlify/:splat  200
+
+# API endpoints and existing files - serve directly
+/api/*  /api/:splat  200
+/libs/*  /libs/:splat  200
+/css/*  /css/:splat  200
+/js/*  /js/:splat  200
+/html/*  /html/:splat  200
+/netlify/*  /netlify/:splat  200
+/*.js  /:splat  200
+/*.css  /:splat  200
+/*.json  /:splat  200
+/*.png  /:splat  200
+/*.jpg  /:splat  200
+/*.svg  /:splat  200
+/*.ico  /:splat  200
+/*.woff  /:splat  200
+/*.woff2  /:splat  200
+/*.ttf  /:splat  200
+
+# SPA Fallback - all other routes redirect to index.html
+# This enables deep-linking for voter/EC invite URLs
+/*  /index.html  200

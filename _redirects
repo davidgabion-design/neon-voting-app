@@ -2,16 +2,14 @@
 # This ensures all routes fall back to index.html for client-side routing
 # Critical for deep-link support (voter invite links, EC links, etc.)
 
-# Netlify Functions - must be processed first
-/.netlify/*  /.netlify/:splat  200
+# Netlify Functions are automatically handled (/.netlify/* is reserved)
 
-# API endpoints and existing files - serve directly
-/api/*  /api/:splat  200
+# Static assets - serve directly
 /libs/*  /libs/:splat  200
 /css/*  /css/:splat  200
 /js/*  /js/:splat  200
 /html/*  /html/:splat  200
-/netlify/*  /netlify/:splat  200
+/lang/*  /lang/:splat  200
 /*.js  /:splat  200
 /*.css  /:splat  200
 /*.json  /:splat  200

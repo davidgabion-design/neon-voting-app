@@ -122,6 +122,9 @@
         
         console.log('✅ Components loaded');
         
+        // Set bootstrap flag to prevent voter HTML redirect scripts from firing
+        window.APP_BOOTSTRAPPED = true;
+        
         // Step 2: Initialize Firebase and app modules (slower - CDN imports)
         document.getElementById('loadingText').textContent = 'Initializing system...';
         
@@ -459,10 +462,14 @@
           if (!sessionRestored) {
             try {
               const params = new URLSearchParams(window.location.search);
-              const urlOrg = params.get('org');
+              const urlOrg = params.get('org') || params.get('orgId');
               const urlRole = params.get('role');
+              const urlMode = params.get('mode');
 
-              if (urlRole === 'ec') {
+              // Handle role-based routing
+              const effectiveRole = urlRole || urlMode;
+
+              if (effectiveRole === 'ec') {
                 if (typeof window.showScreen === 'function') {
                   window.showScreen('ecLoginScreen');
                 }
@@ -470,12 +477,13 @@
                   const ecOrgInput = document.getElementById('ec-org-id');
                   if (ecOrgInput) {
                     ecOrgInput.value = urlOrg;
+                    console.log('🔗 Deep-link: EC login with org', urlOrg);
                   }
                 }
                 return;
               }
 
-              if (urlRole === 'voter') {
+              if (effectiveRole === 'voter') {
                 if (typeof window.showScreen === 'function') {
                   window.showScreen('voterLoginScreen');
                 }
@@ -483,7 +491,48 @@
                   const voterOrgInput = document.getElementById('voterOrgIdInput');
                   if (voterOrgInput) {
                     voterOrgInput.value = urlOrg;
+                    console.log('🔗 Deep-link: Voter login with org', urlOrg);
                   }
+                }
+                return;
+              }
+
+              if (effectiveRole === 'admin') {
+                if (typeof window.showScreen === 'function') {
+                  window.showScreen('adminLoginScreen');
+                  console.log('🔗 Deep-link: Admin login');
+                }
+                return;
+              }
+
+              if (effectiveRole === 'super-admin' || effectiveRole === 'superadmin') {
+                if (typeof window.showScreen === 'function') {
+                  window.showScreen('superAdminLoginScreen');
+                  console.log('🔗 Deep-link: SuperAdmin login');
+                }
+                return;
+              }
+
+              if (effectiveRole === 'results' || effectiveRole === 'public') {
+                if (typeof window.showScreen === 'function') {
+                  window.showScreen('publicScreen');
+                  console.log('🔗 Deep-link: Public results');
+                }
+                if (urlOrg) {
+                  // Auto-load results for this org
+                  setTimeout(() => {
+                    if (typeof window.loadPublicResults === 'function') {
+                      window.loadPublicResults(urlOrg);
+                    }
+                  }, 500);
+                }
+                return;
+              }
+
+              if (effectiveRole === 'guest') {
+                if (typeof window.showScreen === 'function') {
+                  window.showScreen('guestScreen');
+                  console.log('🔗 Deep-link: Guest screen');
                 }
                 return;
               }

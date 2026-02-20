@@ -1,3 +1,49 @@
+<script>
+// CRITICAL: Redirect direct access to voter HTML files → index.html with deep-link params
+// This ensures app bootstrap (Firebase, session, etc.) runs before voter module loads
+(function() {
+  // Detect if this HTML was accessed directly (not loaded as component by index.html)
+  const isDirectAccess = window.location.pathname.includes('/html/voter/') || 
+                         window.location.pathname.endsWith('.html');
+  
+  // Only redirect if this is a direct browser navigation (not component load by html-loader)
+  const isStandaloneWindow = window === window.top && !window.APP_BOOTSTRAPPED;
+  
+  if (isDirectAccess && isStandaloneWindow) {
+    const params = new URLSearchParams(window.location.search);
+    const org = params.get('org') || params.get('orgId');
+    const role = params.get('role') || 'voter';
+    
+    // Build redirect URL with all params preserved
+    const baseUrl = window.location.origin;
+    let redirectUrl = `${baseUrl}/`;
+    
+    // Always add role=voter
+    const redirectParams = new URLSearchParams();
+    redirectParams.set('role', role);
+    
+    // Add org if available
+    if (org) {
+      redirectParams.set('org', encodeURIComponent(org));
+    }
+    
+    // Preserve other params (token, electionId, etc.)
+    params.forEach((value, key) => {
+      if (key !== 'role' && key !== 'org' && key !== 'orgId') {
+        redirectParams.set(key, value);
+      }
+    });
+    
+    const queryString = redirectParams.toString();
+    if (queryString) {
+      redirectUrl += '?' + queryString;
+    }
+    
+    console.log('🔀 Direct voter HTML access detected, redirecting to index.html:', redirectUrl);
+    window.location.replace(redirectUrl);
+  }
+})();
+</script>
 <section id="votingScreen" class="screen">
   <div class="card">
     <div class="section-title">

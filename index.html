@@ -38,7 +38,7 @@
   <script>
     // GLOBAL ERROR HANDLERS - Catches crashes on remote devices
     (function() {
-      const APP_VERSION = 'v1.2.1-20260220'; // Cachebuster version
+      const APP_VERSION = 'v1.2.2-20260220'; // Cachebuster version
       window.NEON_APP_VERSION = APP_VERSION;
       
       // Store errors for debugging
@@ -177,6 +177,35 @@
   </script>
   <script src="/firebase-config.js"></script>
   
+  <!-- Aggressive Cache Clearing for Version Updates -->
+  <script>
+    (async function() {
+      const CURRENT_VERSION = 'v1.2.2-20260220';
+      const STORED_VERSION = localStorage.getItem('NEON_LAST_VERSION');
+      
+      // If version changed or first load, aggressively clear ALL caches
+      if (STORED_VERSION !== CURRENT_VERSION) {
+        console.log(`🔄 Version change detected: ${STORED_VERSION || 'none'} → ${CURRENT_VERSION}`);
+        console.log('🧹 Clearing ALL browser caches...');
+        
+        try {
+          // Clear all Cache API caches
+          const cacheNames = await caches.keys();
+          await Promise.all(cacheNames.map(name => caches.delete(name)));
+          console.log(`✅ Deleted ${cacheNames.length} cache(s):`, cacheNames);
+          
+          // Update stored version
+          localStorage.setItem('NEON_LAST_VERSION', CURRENT_VERSION);
+          console.log('✅ Cache clearing complete');
+        } catch (err) {
+          console.warn('⚠️ Cache clearing failed:', err);
+        }
+      } else {
+        console.log(`✅ Version unchanged (${CURRENT_VERSION}), using cached resources`);
+      }
+    })();
+  </script>
+  
   <!-- Component Loader and App Initialization -->
   <script type="module">
     import { loadHTMLComponents } from '/js/utils/html-loader.js';
@@ -217,7 +246,7 @@
         document.getElementById('loadingText').textContent = 'Initializing system...';
         
         // Dynamic import with cache-busting to prevent stale module loading
-        const APP_VERSION = 'v1.2.1-20260220';
+        const APP_VERSION = 'v1.2.2-20260220';
         try {
           await import(`/js/app.js?v=${APP_VERSION}`);
           console.log('✅ App initialized');
@@ -722,3 +751,4 @@
   </script>
 </body>
 </html>
+

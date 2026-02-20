@@ -1,7 +1,7 @@
 // Neon Voting Platform - Service Worker
 // Simplified version - Only caches local assets, never external resources
 
-const CACHE_VERSION = 'neon-voting-v1.2.1-20260220'; // Must match index.html APP_VERSION
+const CACHE_VERSION = 'neon-voting-v1.2.2-20260220'; // Must match index.html APP_VERSION
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 
 // Only cache YOUR OWN static assets - NO external resources

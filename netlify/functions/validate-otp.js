@@ -145,7 +145,6 @@ exports.handler = async (event) => {
       statusCode: 200, 
       headers,
       body: JSON.stringify({ ok: true, message: 'OTP validated', orgId })
-      body: JSON.stringify({ ok: true }) 
     };
   } catch (e) {
     console.error('Validate OTP error:', e);

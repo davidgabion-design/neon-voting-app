@@ -1,4 +1,25 @@
 /**
+ * Voter Module - Login
+ * Handles voter authentication and credential management
+ */
+
+import { db } from '../config/firebase.js';
+import { collection, doc, getDoc, getDocs, query, where } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js';
+import { 
+  validateEmail, 
+  normalizeEmailAddr, 
+  normalizePhoneE164,
+  normalizeOrgVoterId,
+  buildVoterDocIdFromCredential 
+} from '../utils/validation.js';
+import { showToast, showScreen, createModal } from '../utils/ui-helpers.js';
+import { updateSession } from '../utils/session.js';
+import { writeAudit } from '../features/audit.js';
+import { loadVotingBallot } from './voting.js';
+import { showVoterLiveDashboard } from './results.js';
+import { getCredentialType, validateCredential, buildVoterDocId } from '../config/credential-types.js';
+
+/**
  * VOTER SESSION MANAGEMENT
  * Uses localStorage (persistent across component loads) + window object (in-memory)
  */
@@ -100,6 +121,9 @@ export function clearVoterSession() {
   try {
     localStorage.removeItem(SESSION_KEY);
     delete window.neonVoterSession;
+    if (typeof sessionStorage !== 'undefined') {
+      sessionStorage.removeItem('voterAuthUid');
+    }
     console.log('[clearVoterSession] ✅ Session cleared');
   } catch (err) {
     console.error('[clearVoterSession] Error:', err);
@@ -189,21 +213,28 @@ window.validateVoterOTP = async function(orgId, voterDocId) {
     showToast('OTP validated! Logging you in...', 'success');
     
     // Continue with login flow - fetch voter and org data
+    let orgData, voterData;
     try {
       const orgDoc = await getDoc(doc(db, 'organizations', orgId));
       if (!orgDoc.exists()) {
         showToast('Organization not found', 'error');
         return;
       }
-      const orgData = orgDoc.data();
+      orgData = orgDoc.data();
       
       const voterDoc = await getDoc(doc(db, 'organizations', orgId, 'voters', voterDocId));
       if (!voterDoc.exists()) {
         showToast('Voter not found', 'error');
         return;
       }
-      const voterData = voterDoc.data();
-      
+      voterData = voterDoc.data();
+    } catch (dbErr) {
+      console.error('Database error during voter login:', dbErr);
+      showToast('Unable to connect to database. Please check your connection.', 'error');
+      return;
+    }
+    
+    try {
       // Check if voter is replaced
       if (voterData.isReplaced) {
         showToast('This voter account has been replaced. Contact EC.', 'error');
@@ -288,27 +319,6 @@ window.resendVoterOTP = async function(orgId, voterDocId) {
   }
 };
 
-/**
- * Voter Module - Login
- * Handles voter authentication and credential management
- */
-
-import { db } from '../config/firebase.js';
-import { collection, doc, getDoc, getDocs, query, where } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js';
-import { 
-  validateEmail, 
-  normalizeEmailAddr, 
-  normalizePhoneE164,
-  normalizeOrgVoterId,
-  buildVoterDocIdFromCredential 
-} from '../utils/validation.js';
-import { showToast, showScreen, createModal } from '../utils/ui-helpers.js';
-import { updateSession } from '../utils/session.js';
-import { writeAudit } from '../features/audit.js';
-import { loadVotingBallot } from './voting.js';
-import { showVoterLiveDashboard } from './results.js';
-import { getCredentialType, validateCredential, buildVoterDocId } from '../config/credential-types.js';
-
 // Module state
 let voterSession = null;
 
@@ -334,7 +344,10 @@ export async function updateVoterLoginScreen() {
         credType = getCredentialType(orgDoc.data().credentialType || 'email_phone');
         orgName = orgDoc.data().name || '';
       }
-    } catch (e) {
+    } catch (dbErr) {
+      console.warn('Failed to fetch org credential type:', dbErr);
+      // Continue with default credential type
+    }
       console.error('Error fetching org credential type:', e);
     }
   }
@@ -496,14 +509,19 @@ export async function updateCredentialFieldsForOrg() {
   const orgId = document.getElementById('voterOrgId')?.value.trim();
   if (!orgId) return;
   
+  let orgData;
   try {
     const orgDoc = await getDoc(doc(db, 'organizations', orgId));
     if (!orgDoc.exists()) {
       showToast('Organization not found', 'error');
       return;
     }
-    
-    const orgData = orgDoc.data();
+    orgData = orgDoc.data();
+  } catch (dbErr) {
+    console.error('Database error fetching org:', dbErr);
+    showToast('Unable to verify organization. Please check your connection.', 'error');
+    return;
+  }
     const credType = getCredentialType(orgData.credentialType || 'email_phone');
     
     // Update credential field dynamically
@@ -617,13 +635,19 @@ export async function loginVoterWithCredential() {
     showToast('Verifying credentials...', 'info');
     
     // Fetch organization
-    const orgDoc = await getDoc(doc(db, 'organizations', orgId));
-    if (!orgDoc.exists()) {
-      showToast('Organization not found', 'error');
+    let orgData;
+    try {
+      const orgDoc = await getDoc(doc(db, 'organizations', orgId));
+      if (!orgDoc.exists()) {
+        showToast('Organization not found', 'error');
+        return;
+      }
+      orgData = orgDoc.data();
+    } catch (dbErr) {
+      console.error('Database error fetching organization:', dbErr);
+      showToast('Unable to connect to database. Please check your connection.', 'error');
       return;
     }
-    
-    const orgData = orgDoc.data();
     const credentialTypeId = orgData.credentialType || 'email_phone';
     const credType = getCredentialType(credentialTypeId);
     
@@ -683,13 +707,21 @@ export async function loginVoterWithCredential() {
     }
     
     // Fetch voter document
-    let voterDoc = await getDoc(doc(db, 'organizations', orgId, 'voters', voterDocId));
-    
-    // Fallback: Try old tel: format for phone numbers (backward compatibility)
-    if (!voterDoc.exists() && !primaryCredential.includes('@')) {
-      const legacyPhone = primaryCredential.replace(/\D/g, '');
-      const legacyDocId = encodeURIComponent('tel:' + legacyPhone);
-      voterDoc = await getDoc(doc(db, 'organizations', orgId, 'voters', legacyDocId));
+    let voterDoc;
+    try {
+      voterDoc = await getDoc(doc(db, 'organizations', orgId, 'voters', voterDocId));
+      
+      // Fallback: Try old tel: format for phone numbers (backward compatibility)
+      if (!voterDoc.exists() && !primaryCredential.includes('@')) {
+        const legacyPhone = primaryCredential.replace(/\D/g, '');
+        const legacyDocId = encodeURIComponent('tel:' + legacyPhone);
+        voterDoc = await getDoc(doc(db, 'organizations', orgId, 'voters', legacyDocId));
+      }
+    } catch (dbErr) {
+      console.error('Database error fetching voter:', dbErr);
+      showToast('Unable to verify voter credentials. Please check your connection.', 'error');
+      return;
+    }
       
       if (!voterDoc.exists()) {
         showToast(`No voter found with this ${credType.primaryLabel}`, 'error');
@@ -898,13 +930,20 @@ export async function loginVoterOrgCredential() {
     showToast('Verifying your credentials...', 'info');
 
     // Load organization document
-    const orgRef = doc(db, "organizations", orgId);
-    const orgSnap = await getDoc(orgRef);
-    if (!orgSnap.exists()) {
-      showToast('Organization not found. Please check your Organization ID.', 'error');
+    let org;
+    try {
+      const orgRef = doc(db, "organizations", orgId);
+      const orgSnap = await getDoc(orgRef);
+      if (!orgSnap.exists()) {
+        showToast('Organization not found. Please check your Organization ID.', 'error');
+        return;
+      }
+      org = { id: orgSnap.id, ...(orgSnap.data() || {}) };
+    } catch (dbErr) {
+      console.error('Database error fetching organization:', dbErr);
+      showToast('Unable to connect to database. Please check your connection.', 'error');
       return;
     }
-    const org = { id: orgSnap.id, ...(orgSnap.data() || {}) };
 
     // 2) Approval/enabled checks
     if (org.isDeleted) {
@@ -1048,8 +1087,15 @@ export async function findVoterByEmailOrPhone(orgId, credential) {
     if (!docId) return { found: false };
 
     // 1) Direct lookup (fast path, Option 3 style IDs)
-    const directRef = doc(db, "organizations", orgId, "voters", docId);
-    const directSnap = await getDoc(directRef);
+    let directSnap;
+    try {
+      const directRef = doc(db, "organizations", orgId, "voters", docId);
+      directSnap = await getDoc(directRef);
+    } catch (dbErr) {
+      console.error('Database error during voter lookup:', dbErr);
+      return { found: false, error: 'Database connection error' };
+    }
+    
     if (directSnap.exists()) {
       const voter = directSnap.data() || {};
       return {

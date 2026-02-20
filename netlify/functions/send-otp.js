@@ -55,6 +55,15 @@ exports.handler = async (event) => {
     };
   }
 
+  // Enforce POST method
+  if (event.httpMethod !== 'POST') {
+    return {
+      statusCode: 405,
+      headers: { 'Access-Control-Allow-Origin': '*', 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ok: false, error: 'Method not allowed. Use POST.' })
+    };
+  }
+
   if (!admin.apps.length) {
     return {
       statusCode: 500,

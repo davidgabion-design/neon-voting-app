@@ -229,7 +229,7 @@ async function sendEmail(notificationType, recipientEmail, recipientName, orgId,
   try {
     smtp = getSmtpConfig();
     appUrl = getAppUrl();
-  } catch {
+  } catch (e) {
     return { ok: false, error: 'SMTP not configured' };
   }
 

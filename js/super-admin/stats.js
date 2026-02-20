@@ -36,9 +36,11 @@ export async function initializeDashboard() {
     const orgsQuery = query(collection(db, "organizations"));
     const unsubscribe = onSnapshot(orgsQuery, (snapshot) => {
       clearTimeout(debounceTimer);
+      debounceTimer = null;
       debounceTimer = setTimeout(() => {
         console.log('Dashboard snapshot refresh:', snapshot.size, 'orgs');
         loadDashboardData(snapshot); // ✅ pass snapshot in
+        debounceTimer = null;
       }, 250);
     }, (err) => {
       console.error("Dashboard snapshot error:", err);

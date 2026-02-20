@@ -10,6 +10,22 @@ import { saveSession, getSession } from '../utils/session.js';
 import { setCurrentOrgId, setCurrentOrgData } from '../state/app-state.js';
 
 /**
+ * Clear EC session and cleanup listeners
+ */
+export function clearECSession() {
+  // Cleanup real-time listener
+  if (window.currentOrgUnsub && typeof window.currentOrgUnsub === 'function') {
+    window.currentOrgUnsub();
+    window.currentOrgUnsub = null;
+  }
+  
+  // Clear session data
+  window.currentOrgId = null;
+  window.currentOrgData = null;
+  window.signatureState = { ec: null, superAdmin: null };
+}
+
+/**
  * Show EC OTP input and handle validation
  * @param {string} orgId
  */
@@ -63,12 +79,19 @@ window.validateECOTP = async function(orgId) {
     showToast('OTP validated! Logging you in...', 'success');
     
     // Fetch org data first
-    const orgDoc = await getDoc(doc(db, 'organizations', orgId));
-    if (!orgDoc.exists()) {
-      showToast('Organization not found', 'error');
+    let orgData;
+    try {
+      const orgDoc = await getDoc(doc(db, 'organizations', orgId));
+      if (!orgDoc.exists()) {
+        showToast('Organization not found', 'error');
+        return;
+      }
+      orgData = orgDoc.data();
+    } catch (firestoreErr) {
+      console.error('Firestore error fetching org:', firestoreErr);
+      showToast('Unable to load organization data. Please check your connection.', 'error');
       return;
     }
-    const orgData = orgDoc.data();
     
     // Establish EC session and open panel
     const session = getSession();

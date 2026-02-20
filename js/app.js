@@ -70,6 +70,7 @@ window.resetWalkthroughs = resetWalkthroughs;
 // Export key module functions for inline onclick handlers
 window.loginAdmin = admin.loginAdmin;
 window.loginEC = ec.loginEC;
+window.clearECSession = ec.clearECSession;
 
 // Export session restoration functions
 window.restoreECSession = ec.restoreECSession;

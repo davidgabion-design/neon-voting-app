@@ -296,6 +296,11 @@
             const SESSION_KEY = 'neon_voting_session_v8';
             localStorage.removeItem(SESSION_KEY);
             
+            // Clear EC session and cleanup listeners
+            if (typeof window.clearECSession === 'function') {
+              window.clearECSession();
+            }
+            
             // Clear window state
             window.currentOrgId = null;
             window.currentOrgData = null;

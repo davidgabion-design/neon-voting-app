@@ -5,9 +5,16 @@ import {
   getFirestore, collection, doc, setDoc, getDoc, getDocs, updateDoc, deleteDoc,
   onSnapshot, query, where, serverTimestamp, writeBatch, orderBy, increment, addDoc
 } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
-import { 
-  getStorage, ref as storageRef, uploadString, getDownloadURL, deleteObject 
+import {
+  getStorage, ref as storageRef, uploadString, getDownloadURL, deleteObject
 } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-storage.js";
+import {
+  getAuth,
+  signInAnonymously,
+  onAuthStateChanged,
+  setPersistence,
+  browserSessionPersistence
+} from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
 
 // Firebase config - prefer environment-aware config from firebase-config.js if present
 const firebaseConfig = (typeof window !== 'undefined' && window.firebaseConfig) ? window.firebaseConfig : {
@@ -21,7 +28,8 @@ const firebaseConfig = (typeof window !== 'undefined' && window.firebaseConfig) 
 };
 
 // Initialize Firebase
-let app, db, storage;
+let app, db, storage, auth;
+let authReady = Promise.resolve();
 try {
   app = initializeApp(firebaseConfig);
   
@@ -33,17 +41,24 @@ try {
   
   db = getFirestore(app);
   storage = getStorage(app);
+  auth = getAuth(app);
+  authReady = setPersistence(auth, browserSessionPersistence)
+    .catch(err => {
+      console.warn('Auth persistence setup failed:', err);
+    });
   
   // Set global flags after successful initialization
   window.firebase = { apps: [app] };
   window.__appInitialized = true;
   window.firebaseReady = Promise.resolve(true);
+  window.firebaseAuthReady = authReady;
   
   console.log('✅ Firebase initialized successfully');
 } catch (error) {
   console.error('❌ Firebase initialization failed:', error);
   window.__appInitialized = false;
   window.firebaseReady = Promise.reject(error);
+  window.firebaseAuthReady = Promise.reject(error);
   alert('Firebase initialization failed. Please refresh the page. Error: ' + error.message);
 }
 
@@ -70,5 +85,8 @@ export {
   storageRef,
   uploadString,
   getDownloadURL,
-  deleteObject
+  deleteObject,
+  auth,
+  signInAnonymously,
+  onAuthStateChanged
 };

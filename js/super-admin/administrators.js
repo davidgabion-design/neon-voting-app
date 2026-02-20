@@ -646,7 +646,7 @@ async function sendAdminInvites(name, email, phone, password, sendEmail, sendWha
       let result = {};
       try {
         result = text ? JSON.parse(text) : {};
-      } catch {
+      } catch (e) {
         result = {};
       }
 

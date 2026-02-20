@@ -3,7 +3,7 @@
  * Handles vote submission, post-vote dashboard, and live results
  */
 
-import { db } from '../config/firebase.js';
+import { db, auth } from '../config/firebase.js';
 import { 
   doc, 
   getDoc, 
@@ -21,6 +21,7 @@ import { getSelectedCandidates, clearSelectedCandidates } from './voting.js';
 let voterSession = null;
 let session = {};
 let voterCountdownInterval = null;
+let isSubmitting = false;
 
 // Rebuild voter session from localStorage/window/sessionStorage
 function hydrateVoterSession() {
@@ -75,6 +76,20 @@ function hydrateVoterSession() {
  * Submit voter's ballot
  */
 export async function submitVote() {
+  // 🔒 SECURITY: Prevent double-submit
+  if (isSubmitting) {
+    console.warn('[submitVote] Already submitting, ignoring duplicate call');
+    return;
+  }
+
+  // 🔒 SECURITY: Verify Firebase Auth state
+  if (!auth?.currentUser) {
+    showToast('Authentication expired. Please refresh and login again.', 'error');
+    clearVoterSession();
+    showScreen('voterLoginScreen');
+    return;
+  }
+
   if (!hydrateVoterSession()) {
     showToast('Voter session not found. Please login again.', 'error');
     showScreen('voterLoginScreen');
@@ -113,6 +128,14 @@ export async function submitVote() {
 
   if (!confirm('Submit your vote? This action cannot be undone.')) return;
 
+  // 🔒 Set submission lock and disable button
+  isSubmitting = true;
+  const submitBtn = document.getElementById('submitVoteBtn');
+  if (submitBtn) {
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting...';
+  }
+
   try {
     const batch = writeBatch(db);
 
@@ -150,7 +173,9 @@ export async function submitVote() {
       voterName: voterSession.voterData?.name || voterSession.email || voterSession.phone || "Voter",
       choices,
       votedAt: serverTimestamp(),
-      userAgent: navigator.userAgent
+      userAgent: navigator.userAgent,
+      authUid: auth.currentUser.uid,
+      authProvider: 'firebase-anonymous'
     };
 
     batch.set(voteRef, voteData);
@@ -178,6 +203,12 @@ export async function submitVote() {
     sessionStorage.removeItem('voterViewMode');
     sessionStorage.removeItem('voterOrgId');
     sessionStorage.removeItem('voterData');
+
+    // Re-enable submit button on success (though user will be redirected)
+    if (submitBtn) {
+      submitBtn.disabled = false;
+      submitBtn.innerHTML = '<i class="fas fa-check"></i> Vote Submitted';
+    }
     sessionStorage.removeItem('voterDocId');
     
     // Clear localStorage session (new storage layer)
@@ -193,6 +224,14 @@ export async function submitVote() {
   } catch (error) {
     console.error('Error submitting vote:', error);
     showToast('Failed to submit vote. Please try again.', 'error');
+    
+    // Re-enable button on error
+    if (submitBtn) {
+      submitBtn.disabled = false;
+      submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> <span data-i18n="submit_vote">Submit Vote</span>';
+    }
+  } finally {
+    isSubmitting = false;
   }
 }
 

@@ -274,7 +274,7 @@ export function getUrlParam(key) {
   try {
     const params = new URLSearchParams(window.location.search);
     return params.get(key);
-  } catch {
+  } catch (e) {
     return null;
   }
 }

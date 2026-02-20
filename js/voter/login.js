@@ -522,6 +522,8 @@ export async function updateCredentialFieldsForOrg() {
     showToast('Unable to verify organization. Please check your connection.', 'error');
     return;
   }
+  
+  try {
     const credType = getCredentialType(orgData.credentialType || 'email_phone');
     
     // Update credential field dynamically

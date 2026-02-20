@@ -3,10 +3,18 @@
  * Uses localStorage (persistent across component loads) + window object (in-memory)
  */
 
+const SESSION_KEY = 'neon_voter_session';
+const SESSION_DURATION = 30 * 60 * 1000; // 30 minutes
+
 /**
  * Save voter session to localStorage and window
  */
-function saveVoterSession(orgId, voterDocId, voterData) {
+export function saveVoterSession(orgId, voterDocId, voterData) {
+  if (!orgId || !voterDocId) {
+    console.error('[saveVoterSession] Invalid parameters:', { orgId, voterDocId });
+    return false;
+  }
+
   const sessionData = {
     orgId: String(orgId),
     voterDocId: String(voterDocId),
@@ -14,55 +22,71 @@ function saveVoterSession(orgId, voterDocId, voterData) {
     voterEmail: voterData?.email || '',
     voterPhone: voterData?.phone || '',
     loginTimestamp: Date.now(),
-    expiresAt: Date.now() + (30 * 60 * 1000) // 30 minutes
+    expiresAt: Date.now() + SESSION_DURATION
   };
 
-  // Store in localStorage (persists across component loads)
-  localStorage.setItem('neon_voter_session', JSON.stringify(sessionData));
-  
-  // Store in window object (fast access)
-  window.neonVoterSession = sessionData;
-  
-  console.log('[saveVoterSession] ✅ Session saved:', {
-    orgId: sessionData.orgId,
-    voterDocId: sessionData.voterDocId,
-    voterName: sessionData.voterName
-  });
+  try {
+    // Store in localStorage (persists across component loads)
+    localStorage.setItem(SESSION_KEY, JSON.stringify(sessionData));
+    
+    // Store in window object (fast access)
+    window.neonVoterSession = sessionData;
+    
+    console.log('[saveVoterSession] ✅ Session saved:', {
+      orgId: sessionData.orgId,
+      voterDocId: sessionData.voterDocId,
+      expiresAt: new Date(sessionData.expiresAt).toLocaleTimeString()
+    });
+
+    return true;
+  } catch (err) {
+    console.error('[saveVoterSession] Failed to save session:', err);
+    return false;
+  }
 }
 
 /**
  * Load voter session from localStorage/window
  */
 export function loadVoterSession() {
-  // Try window object first (fastest)
+  // Priority 1: Check window object (fastest)
   if (window.neonVoterSession) {
     const session = window.neonVoterSession;
-    if (session.expiresAt > Date.now()) {
+    if (session.expiresAt && session.expiresAt > Date.now()) {
       return session;
     } else {
       console.log('[loadVoterSession] ⚠️ Window session expired');
-      clearVoterSession();
-      return null;
     }
   }
 
-  // Fallback to localStorage
-  const stored = localStorage.getItem('neon_voter_session');
-  if (stored) {
-    try {
+  // Priority 2: Check localStorage
+  try {
+    const stored = localStorage.getItem(SESSION_KEY);
+    if (stored) {
       const session = JSON.parse(stored);
+      
+      // Validate session structure
+      if (!session.orgId || !session.voterDocId || !session.expiresAt) {
+        console.error('[loadVoterSession] Invalid session structure:', session);
+        clearVoterSession();
+        return null;
+      }
+
+      // Check expiry
       if (session.expiresAt > Date.now()) {
         console.log('[loadVoterSession] ✅ Restored from localStorage:', session.voterDocId);
-        window.neonVoterSession = session; // Hydrate window object
+        
+        // Hydrate window object
+        window.neonVoterSession = session;
         return session;
       } else {
         console.log('[loadVoterSession] ⚠️ localStorage session expired');
         clearVoterSession();
       }
-    } catch (err) {
-      console.error('[loadVoterSession] Failed to parse session:', err);
-      clearVoterSession();
     }
+  } catch (err) {
+    console.error('[loadVoterSession] Failed to parse localStorage session:', err);
+    clearVoterSession();
   }
 
   console.log('[loadVoterSession] ❌ No valid session found');
@@ -70,23 +94,32 @@ export function loadVoterSession() {
 }
 
 /**
- * Clear voter session
+ * Clear voter session from all storage
  */
 export function clearVoterSession() {
-  localStorage.removeItem('neon_voter_session');
-  delete window.neonVoterSession;
-  console.log('[clearVoterSession] ✅ Session cleared');
+  try {
+    localStorage.removeItem(SESSION_KEY);
+    delete window.neonVoterSession;
+    console.log('[clearVoterSession] ✅ Session cleared');
+  } catch (err) {
+    console.error('[clearVoterSession] Error:', err);
+  }
 }
 
 /**
- * Extend session expiry (call when user interacts)
+ * Extend session expiry (called on user activity)
  */
 export function extendVoterSession() {
   const session = loadVoterSession();
   if (session) {
-    session.expiresAt = Date.now() + (30 * 60 * 1000);
-    localStorage.setItem('neon_voter_session', JSON.stringify(session));
-    window.neonVoterSession = session;
+    session.expiresAt = Date.now() + SESSION_DURATION;
+    try {
+      localStorage.setItem(SESSION_KEY, JSON.stringify(session));
+      window.neonVoterSession = session;
+      console.log('[extendVoterSession] ✅ Session extended to:', new Date(session.expiresAt).toLocaleTimeString());
+    } catch (err) {
+      console.error('[extendVoterSession] Failed:', err);
+    }
   }
 }
 

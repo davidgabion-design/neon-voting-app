@@ -178,11 +178,15 @@ export async function submitVote() {
     sessionStorage.removeItem('voterViewMode');
     sessionStorage.removeItem('voterOrgId');
     sessionStorage.removeItem('voterData');
+    sessionStorage.removeItem('voterDocId');
     
-    // Clear localStorage session
+    // Clear localStorage session (new storage layer)
     if (window.clearVoterSession) {
       window.clearVoterSession();
     }
+    
+    // Also clear legacy localStorage keys
+    localStorage.removeItem('neon_voter_session');
 
     showToast('✅ Vote submitted successfully!', 'success');
     showScreen('gatewayScreen');

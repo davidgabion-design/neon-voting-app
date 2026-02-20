@@ -4,12 +4,46 @@
  */
 
 import { db } from '../config/firebase.js';
-import { collection, doc, getDoc, getDocs } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js';
+import { collection, doc, getDoc, getDocs, writeBatch, increment, serverTimestamp } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js';
 import { showToast, showScreen, getDefaultAvatar, showQuickLoading, renderError } from '../utils/ui-helpers.js';
 import { startVoterCountdown } from './results.js';
+import { loadVoterSession, extendVoterSession, clearVoterSession } from './login.js';
+import { writeAudit } from '../features/audit.js';
 
 // Module state
 let selectedCandidates = {};
+
+/**
+ * Initialize voting interface
+ * Called when voter/voting.html component loads
+ */
+export async function initVotingInterface() {
+  console.log('[initVotingInterface] Starting...');
+
+  // Load session
+  const session = loadVoterSession();
+  
+  if (!session) {
+    console.error('[initVotingInterface] No valid session found');
+    showToast('Your session has expired. Please log in again.', 'error');
+    
+    setTimeout(() => {
+      clearVoterSession();
+      showScreen('voterLoginScreen');
+    }, 2000);
+    return;
+  }
+
+  const { orgId, voterDocId } = session;
+  
+  console.log('[initVotingInterface] Session loaded:', { orgId, voterDocId });
+
+  // Extend session on activity
+  extendVoterSession();
+
+  // Load ballot
+  await loadVotingBallot(orgId);
+}
 
 /**
  * Load voting ballot for organization
@@ -253,6 +287,9 @@ export async function loadVotingBallot(orgId) {
  * @param {number} maxSelections - Maximum selections allowed
  */
 export function updateSelectedCandidates(positionId, candidateId, isSelected, maxSelections) {
+  // Extend session on user interaction
+  extendVoterSession();
+  
   if (!selectedCandidates[positionId]) {
     selectedCandidates[positionId] = [];
   }
@@ -369,11 +406,156 @@ export function clearSelectedCandidates() {
   selectedCandidates = {};
 }
 
+/**
+ * Submit vote to Firestore
+ */
+export async function submitVote() {
+  try {
+    // Extend session
+    extendVoterSession();
+
+    // Load session
+    const session = loadVoterSession();
+    
+    if (!session) {
+      showToast('Your session has expired. Please log in again.', 'error');
+      setTimeout(() => {
+        clearVoterSession();
+        showScreen('voterLoginScreen');
+      }, 2000);
+      return;
+    }
+
+    const { orgId, voterDocId, voterName } = session;
+
+    console.log('[submitVote] Using session:', { orgId, voterDocId, voterName });
+
+    // Validate that we have selections
+    if (!selectedCandidates || Object.keys(selectedCandidates).length === 0) {
+      showToast('Please select at least one candidate before submitting', 'warning');
+      return;
+    }
+
+    // Confirmation
+    const totalSelections = Object.keys(selectedCandidates).length;
+    
+    const confirmMsg = `You are about to submit your vote with ${totalSelections} selection(s).\\n\\n⚠️ This action CANNOT be undone.\\n\\nProceed?`;
+    
+    if (!confirm(confirmMsg)) {
+      return;
+    }
+
+    showToast('Submitting your vote...', 'info');
+
+    // Disable submit button
+    const submitBtn = document.getElementById('submitVoteBtn');
+    if (submitBtn) {
+      submitBtn.disabled = true;
+      submitBtn.textContent = '⏳ Submitting...';
+    }
+
+    // Use batch write for atomicity
+    const batch = writeBatch(db);
+
+    // Flatten choices: store as { positionId: choice } when single, or array when multi
+    // Ensure we only store candidate IDs as strings, not objects
+    const choices = {};
+    Object.keys(selectedCandidates).forEach(pid => {
+      const arr = selectedCandidates[pid] || [];
+      // Convert any objects to their ID property or string value
+      const cleanArr = arr.map(item => {
+        if (typeof item === 'object' && item !== null) {
+          return item.id || item.candidateId || String(item);
+        }
+        return String(item);
+      });
+      choices[pid] = cleanArr.length <= 1 ? (cleanArr[0] || null) : cleanArr;
+    });
+
+    // 1. Record vote
+    const voteDocId = voterDocId;
+    const voteRef = doc(db, 'organizations', orgId, 'votes', voteDocId);
+    
+    // Prevent overwrite
+    const existingVote = await getDoc(voteRef);
+    if (existingVote.exists()) {
+      showToast('A vote for this voter already exists.', 'warning');
+      return;
+    }
+
+    const voteData = {
+      voterKey: voteDocId,
+      voterId: voteDocId,
+      voterEmail: session.voterEmail || '',
+      voterPhone: session.voterPhone || '',
+      voterName: voterName || 'Voter',
+      choices,
+      votedAt: serverTimestamp(),
+      userAgent: navigator.userAgent
+    };
+
+    batch.set(voteRef, voteData);
+
+    // 2. Mark voter as voted
+    const voterRef = doc(db, 'organizations', orgId, 'voters', voterDocId);
+    batch.update(voterRef, { hasVoted: true, votedAt: serverTimestamp() });
+
+    // 3. Update org vote count
+    const orgRef = doc(db, 'organizations', orgId);
+    batch.update(orgRef, { voteCount: increment(1) });
+
+    // 4. Increment candidate vote counts
+    for (const [posId, candidateIds] of Object.entries(choices)) {
+      const ids = Array.isArray(candidateIds) ? candidateIds : [candidateIds];
+      for (const candId of ids) {
+        if (candId) {
+          const candRef = doc(db, 'organizations', orgId, 'candidates', candId);
+          batch.update(candRef, { votes: increment(1) });
+        }
+      }
+    }
+
+    // Commit batch
+    await batch.commit();
+
+    // Audit log (with proper string conversion)
+    await writeAudit(String(orgId), 'VOTE_SUBMITTED', {
+      voterDocId: String(voterDocId),
+      voterName: String(voterName || 'Unknown'),
+      positionsVoted: Object.keys(choices).length
+    });
+
+    showToast('✅ Vote submitted successfully!', 'success');
+
+    // Clear all selections and session
+    selectedCandidates = {};
+    
+    // Clear session after successful vote
+    setTimeout(() => {
+      clearVoterSession();
+      showScreen('voterLoginScreen');
+    }, 1500);
+
+  } catch (err) {
+    console.error('[submitVote] Error:', err);
+    showToast(`Failed to submit vote: ${err.message}`, 'error');
+    
+    // Re-enable submit button
+    const submitBtn = document.getElementById('submitVoteBtn');
+    if (submitBtn) {
+      submitBtn.disabled = false;
+      updateVoteSummary();
+    }
+  }
+}
+
 // Export to window for backwards compatibility
 if (typeof window !== 'undefined') {
+  window.initVotingInterface = initVotingInterface;
   window.loadVotingBallot = loadVotingBallot;
   window.updateSelectedCandidates = updateSelectedCandidates;
   window.updateVoteSummary = updateVoteSummary;
   window.clearSelections = clearSelections;
   window.cancelVoting = cancelVoting;
+  window.submitVote = submitVote;
 }

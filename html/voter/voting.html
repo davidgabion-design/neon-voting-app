@@ -37,3 +37,22 @@
     </div>
   </div>
 </section>
+
+<script type="module">
+  // Auto-initialize voting interface when component loads
+  console.log('[voting.html] Component loaded, initializing...');
+  
+  // Wait for initVotingInterface to be available
+  const initVoting = () => {
+    if (window.initVotingInterface && typeof window.initVotingInterface === 'function') {
+      console.log('[voting.html] Calling initVotingInterface...');
+      window.initVotingInterface();
+    } else {
+      console.warn('[voting.html] initVotingInterface not ready, retrying in 100ms...');
+      setTimeout(initVoting, 100);
+    }
+  };
+  
+  // Start initialization after a brief delay
+  setTimeout(initVoting, 50);
+</script>

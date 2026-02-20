@@ -22,11 +22,37 @@ let voterSession = null;
 let session = {};
 let voterCountdownInterval = null;
 
+// Rebuild voter session from stored globals/sessionStorage if missing
+function hydrateVoterSession() {
+  if (voterSession) return voterSession;
+
+  try {
+    const orgId = window.currentOrgId || sessionStorage.getItem('voterOrgId');
+    const voterDocId = window.voterDocId || sessionStorage.getItem('voterDocId');
+    const voterData = window.voterData || JSON.parse(sessionStorage.getItem('voterData') || '{}');
+
+    if (orgId && voterDocId) {
+      voterSession = {
+        orgId,
+        voterDocId,
+        voterKey: voterDocId,
+        email: voterData?.email || '',
+        phone: voterData?.phone || '',
+        voterData
+      };
+    }
+  } catch (e) {
+    console.warn('hydrateVoterSession failed', e);
+  }
+
+  return voterSession;
+}
+
 /**
  * Submit voter's ballot
  */
 export async function submitVote() {
-  if (!voterSession) {
+  if (!hydrateVoterSession()) {
     showToast('Voter session not found. Please login again.', 'error');
     showScreen('voterLoginScreen');
     return;

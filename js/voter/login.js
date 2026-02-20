@@ -107,6 +107,7 @@ window.validateVoterOTP = async function(orgId, voterDocId) {
       window.voterDocId = voterDocId;
       sessionStorage.setItem('voterViewMode', 'active');
       sessionStorage.setItem('voterOrgId', orgId);
+      sessionStorage.setItem('voterDocId', voterDocId);
       sessionStorage.setItem('voterData', JSON.stringify(voterData));
       
       await writeAudit(

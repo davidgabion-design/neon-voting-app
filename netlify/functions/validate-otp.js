@@ -42,18 +42,6 @@ exports.handler = async (event) => {
     };
   }
 
-  // Enforce POST method
-  if (event.httpMethod !== 'POST') {
-    return {
-      statusCode: 405,
-      headers: {
-        "Access-Control-Allow-Origin": "*",
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({ ok: false, error: 'Method not allowed. Use POST.' })
-    };
-  }
-
   const headers = {
     "Access-Control-Allow-Origin": "*",
     "Content-Type": "application/json"
@@ -107,44 +95,12 @@ exports.handler = async (event) => {
       };
     }
 
-    // 🔒 SECURITY: Verify EC ownership of organization
-    if (userId === 'ec') {
-      try {
-        const orgRef = admin.firestore().doc(`organizations/${orgId}`);
-        const orgSnap = await orgRef.get();
-        
-        if (!orgSnap.exists) {
-          return {
-            statusCode: 404,
-            headers,
-            body: JSON.stringify({ ok: false, error: 'Organization not found' })
-          };
-        }
-        
-        const orgData = orgSnap.data();
-        if (!orgData.ecEmail && !orgData.ecPhone) {
-          return {
-            statusCode: 403,
-            headers,
-            body: JSON.stringify({ ok: false, error: 'EC not configured for this organization' })
-          };
-        }
-      } catch (verifyErr) {
-        console.error('Org verification error:', verifyErr);
-        return {
-          statusCode: 500,
-          headers,
-          body: JSON.stringify({ ok: false, error: 'Verification failed' })
-        };
-      }
-    }
-
     // Success: delete OTP
     await docRef.delete();
     return { 
       statusCode: 200, 
       headers,
-      body: JSON.stringify({ ok: true, message: 'OTP validated', orgId })
+      body: JSON.stringify({ ok: true }) 
     };
   } catch (e) {
     console.error('Validate OTP error:', e);

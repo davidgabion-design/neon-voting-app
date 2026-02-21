@@ -1,5 +1,5 @@
 ﻿
-    import { loadHTMLComponents } from './js/utils/html-loader.js';
+    import { loadHTMLComponents } from '/js/utils/html-loader.js';
     
     // Load all HTML components first (fast), then initialize Firebase
     async function initializeApp() {

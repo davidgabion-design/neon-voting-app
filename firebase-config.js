@@ -7,8 +7,8 @@ const firebaseConfig = {
   projectId: env.FIREBASE_PROJECT_ID || "neon-voting-app",
   storageBucket: env.FIREBASE_STORAGE_BUCKET || "neon-voting-app.firebasestorage.app",
   messagingSenderId: env.FIREBASE_MESSAGING_SENDER_ID || "406871836482",
-  appId: env.FIREBASE_APP_ID || "1:406871836482:web:b25063cd3829cd3dc6aadb",
-  measurementId: env.FIREBASE_MEASUREMENT_ID || "G-VGW2Z3FR8M"
+  appId: env.FIREBASE_APP_ID || "1:406871836482:web:b25063cd3829cd3dc6aadb"
+  // measurementId removed - Analytics disabled to prevent cookie errors
 };
 
 // Set APP_URL for email invites - use production URL by default

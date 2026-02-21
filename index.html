@@ -33,13 +33,16 @@
   <link rel="stylesheet" href="/css/dashboard.css">
   <link rel="stylesheet" href="/css/voter.css">
   <link rel="stylesheet" href="/css/responsive.css">
+  <link rel="stylesheet" href="/css/ballot.css">
   
   <!-- Global Error Handlers - Must load before any other scripts -->
   <script>
+    // Version constant - single source of truth
+    window.NEON_APP_VERSION = 'v1.2.2-20260220';
+    
     // GLOBAL ERROR HANDLERS - Catches crashes on remote devices
     (function() {
-      const APP_VERSION = 'v1.2.2-20260220'; // Cachebuster version
-      window.NEON_APP_VERSION = APP_VERSION;
+      const APP_VERSION = window.NEON_APP_VERSION;
       
       // Store errors for debugging
       window.NEON_ERRORS = [];
@@ -180,7 +183,7 @@
   <!-- Aggressive Cache Clearing for Version Updates -->
   <script>
     (async function() {
-      const CURRENT_VERSION = 'v1.2.2-20260220';
+      const CURRENT_VERSION = window.NEON_APP_VERSION;
       const STORED_VERSION = localStorage.getItem('NEON_LAST_VERSION');
       
       // If version changed or first load, aggressively clear ALL caches
@@ -205,10 +208,112 @@
       }
     })();
   </script>
+
+  <!-- PATCH START: zero-error boot guard -->
+  <script type="module">
+    import { safeBoot } from '/js/utils/boot-guard.js';
+    // One-time cleanup prevents other devices being stuck on old cached code
+    await safeBoot(async () => {}, { cleanupSW: true });
+  </script>
+  <!-- PATCH END -->
   
   <!-- Component Loader and App Initialization -->
   <script type="module">
     import { loadHTMLComponents } from '/js/utils/html-loader.js';
+    
+    // Voter Login Wrapper - Bridges simple login form with modular login functions
+    window.voterLogin = async function() {
+      const orgId = document.getElementById('voterOrgIdInput')?.value.trim();
+      const credential = document.getElementById('voterCredentialInput')?.value.trim();
+      
+      if (!orgId) {
+        if (typeof window.showToast === 'function') {
+          window.showToast('Please enter Organization ID', 'error');
+        }
+        return;
+      }
+      
+      if (!credential) {
+        if (typeof window.showToast === 'function') {
+          window.showToast('Please enter your email or phone number', 'error');
+        }
+        return;
+      }
+      
+      // Determine if credential is email or phone
+      const isEmail = credential.includes('@');
+      
+      // Create temporary elements with IDs expected by loginVoterWithCredential()
+      let tempOrgId = document.getElementById('voterOrgId');
+      if (!tempOrgId) {
+        tempOrgId = document.createElement('input');
+        tempOrgId.id = 'voterOrgId';
+        tempOrgId.style.display = 'none';
+        document.body.appendChild(tempOrgId);
+      }
+      tempOrgId.value = orgId;
+      
+      // Create email or phone field based on credential type
+      if (isEmail) {
+        let tempEmail = document.getElementById('voterEmail');
+        if (!tempEmail) {
+          tempEmail = document.createElement('input');
+          tempEmail.id = 'voterEmail';
+          tempEmail.style.display = 'none';
+          document.body.appendChild(tempEmail);
+        }
+        tempEmail.value = credential;
+        
+        // Show email group
+        let emailGroup = document.getElementById('emailInputGroup');
+        if (!emailGroup) {
+          emailGroup = document.createElement('div');
+          emailGroup.id = 'emailInputGroup';
+          emailGroup.style.display = 'block';
+          document.body.appendChild(emailGroup);
+        } else {
+          emailGroup.style.display = 'block';
+        }
+        
+        // Hide phone group
+        const phoneGroup = document.getElementById('phoneInputGroup');
+        if (phoneGroup) phoneGroup.style.display = 'none';
+      } else {
+        let tempPhone = document.getElementById('voterPhone');
+        if (!tempPhone) {
+          tempPhone = document.createElement('input');
+          tempPhone.id = 'voterPhone';
+          tempPhone.style.display = 'none';
+          document.body.appendChild(tempPhone);
+        }
+        tempPhone.value = credential;
+        
+        // Show phone group
+        let phoneGroup = document.getElementById('phoneInputGroup');
+        if (!phoneGroup) {
+          phoneGroup = document.createElement('div');
+          phoneGroup.id = 'phoneInputGroup';
+          phoneGroup.style.display = 'block';
+          document.body.appendChild(phoneGroup);
+        } else {
+          phoneGroup.style.display = 'block';
+        }
+        
+        // Hide email group
+        const emailGroup = document.getElementById('emailInputGroup');
+        if (emailGroup) emailGroup.style.display = 'none';
+      }
+      
+      // Call the actual login function
+      if (typeof window.loginVoterWithCredential === 'function') {
+        await window.loginVoterWithCredential();
+      } else {
+        console.error('loginVoterWithCredential function not available');
+        if (typeof window.showToast === 'function') {
+          window.showToast('Login system not ready. Please refresh the page.', 'error');
+        }
+      }
+    };
     
     // Load all HTML components first (fast), then initialize Firebase
     async function initializeApp() {
@@ -239,6 +344,24 @@
         
         console.log('✅ Components loaded');
         
+        // Verify critical voter components loaded successfully
+        const criticalVoterElements = [
+          'voterLoginScreen',
+          'votingScreen',
+          'alreadyVotedScreen',
+          'voterLoginBtn',
+          'voterOrgIdInput',
+          'voterCredentialInput'
+        ];
+        
+        const missingElements = criticalVoterElements.filter(id => !document.getElementById(id));
+        if (missingElements.length > 0) {
+          console.error('❌ Critical voter components missing:', missingElements);
+          throw new Error(`Failed to load voter components: ${missingElements.join(', ')}`);
+        }
+        
+        console.log('✅ Voter components verified');
+        
         // Set bootstrap flag to prevent voter HTML redirect scripts from firing
         window.APP_BOOTSTRAPPED = true;
         
@@ -246,7 +369,7 @@
         document.getElementById('loadingText').textContent = 'Initializing system...';
         
         // Dynamic import with cache-busting to prevent stale module loading
-        const APP_VERSION = 'v1.2.2-20260220';
+        const APP_VERSION = window.NEON_APP_VERSION;
         try {
           await import(`/js/app.js?v=${APP_VERSION}`);
           console.log('✅ App initialized');
@@ -607,6 +730,20 @@
                     console.log('🔗 Deep-link: Voter login with org', urlOrg);
                   }
                 }
+                
+                // Pre-fill credential from URL (email or phone)
+                const urlEmail = params.get('email');
+                const urlPhone = params.get('phone');
+                const credential = urlEmail || urlPhone;
+                
+                if (credential) {
+                  const voterCredInput = document.getElementById('voterCredentialInput');
+                  if (voterCredInput) {
+                    voterCredInput.value = decodeURIComponent(credential);
+                    console.log('🔗 Pre-filled voter credential from invite link');
+                  }
+                }
+                
                 return;
               }
 
@@ -678,77 +815,10 @@
     initializeApp();
   </script>
   
-  <!-- 
-    ✅ Modularization Complete with Admin System! 
-    HTML: 15 component files (gateway, logins, panels, screens, modals)
-    JS: 7 modules (37 files, 145+ functions)
-    CSS: 7 files (variables, base, components, layout, dashboard, voter, responsive)
-  -->
-  
   <!-- External Libraries for PDF/Excel Export -->
   <script src="/libs/jspdf.umd.min.js"></script>
   <script src="/libs/jspdf.plugin.autotable.min.js"></script>
   
-  <!-- Service Worker Registration - TEMPORARILY DISABLED -->
-  <!-- Service Worker with Kill Switch and Cache Versioning -->
-  <script>
-    if ('serviceWorker' in navigator) {
-      // Check for kill switch
-      const disableSW = localStorage.getItem('NEON_DISABLE_SW') === '1';
-      
-      if (disableSW) {
-        console.log('🔧 Service Worker disabled via kill switch (NEON_DISABLE_SW=1)');
-        // Unregister all existing service workers
-        navigator.serviceWorker.getRegistrations().then((registrations) => {
-          for (let registration of registrations) {
-            registration.unregister().then(() => {
-              console.log('🔧 Service Worker unregistered due to kill switch');
-            });
-          }
-        });
-      } else {
-        // Auto-unregister old service workers (cache busting)
-        navigator.serviceWorker.getRegistrations().then((registrations) => {
-          for (let registration of registrations) {
-            registration.unregister().then(() => {
-              console.log('🔧 Old Service Worker unregistered for cache refresh');
-            });
-          }
-        });
-        
-        // Re-register with version parameter for cache busting
-        window.addEventListener('load', () => {
-          navigator.serviceWorker.register(`/sw.js?v=${window.NEON_APP_VERSION}`)
-            .then((registration) => {
-              console.log(`✅ Service Worker registered (${window.NEON_APP_VERSION}):`, registration.scope);
-              
-              // Check for updates periodically
-              setInterval(() => {
-                registration.update();
-              }, 60000); // Check every minute
-              
-              // Listen for updates
-              registration.addEventListener('updatefound', () => {
-                const newWorker = registration.installing;
-                newWorker.addEventListener('statechange', () => {
-                  if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                    console.log('✅ New app version available');
-                    if (typeof window.showToast === 'function') {
-                      window.showToast('App update available! Refresh to update.', 'info');
-                    }
-                  }
-                });
-              });
-            })
-            .catch((error) => {
-              console.warn('⚠️ Service Worker registration failed:', error);
-            });
-        });
-      }
-    } else {
-      console.warn('⚠️ Service Workers not supported in this browser');
-    }
-  </script>
 </body>
 </html>
 

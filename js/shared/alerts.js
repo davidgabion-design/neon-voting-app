@@ -142,6 +142,7 @@ export async function send30MinAlerts() {
             voterName,
             orgName: currentOrgData.name || 'your election',
             orgId: currentOrgId,
+            phone: voterPhone,
             appUrl,
             alertType: '30min'
           });
@@ -265,6 +266,7 @@ export async function sendVoteStartAlerts() {
             voterName,
             orgName: currentOrgData.name || 'your election',
             orgId: currentOrgId,
+            phone: voterPhone,
             appUrl,
             alertType: 'start'
           });

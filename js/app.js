@@ -1,6 +1,16 @@
 // js/app.js - Main Application Entry Point
 // This file coordinates all modules and initializes the application
 
+// PATCH START: zero-error safe boot + module health check
+import { installGlobalGuards, cleanupOldServiceWorkersOnce } from './utils/boot-guard.js';
+
+// Install global error handlers to catch any import/runtime failures
+installGlobalGuards();
+
+// One-time cleanup of old service workers
+await cleanupOldServiceWorkersOnce();
+// PATCH END
+
 // Import configuration
 import { db, storage } from './config/firebase.js';
 import * as constants from './config/constants.js';
@@ -70,7 +80,6 @@ window.resetWalkthroughs = resetWalkthroughs;
 // Export key module functions for inline onclick handlers
 window.loginAdmin = admin.loginAdmin;
 window.loginEC = ec.loginEC;
-window.clearECSession = ec.clearECSession;
 
 // Export session restoration functions
 window.restoreECSession = ec.restoreECSession;
@@ -79,6 +88,7 @@ window.restoreAdminSession = admin.restoreAdminSession;
 window.restoreVoterSession = voter.restoreVoterSession;
 
 // Export dashboard functions
+window.showSuperTab = superAdmin.showSuperTab;
 window.initializeDashboard = superAdmin.initializeDashboard;
 window.refreshDashboard = superAdmin.refreshDashboard;
 window.setDashboardTimeFilter = superAdmin.setDashboardTimeFilter;
@@ -92,6 +102,13 @@ window.reconsiderApproval = superAdmin.reconsiderApproval;
 
 // Export administrator management functions
 window.loadAdministrators = superAdmin.loadAdministrators;
+
+// Export revoke elections functions
+window.loadRevokeElectionsList = superAdmin.loadRevokeElectionsList;
+window.filterRevokeElections = superAdmin.filterRevokeElections;
+window.showRevokeElectionModal = superAdmin.showRevokeElectionModal;
+window.confirmRevokeElection = superAdmin.confirmRevokeElection;
+window.viewElectionDetails = superAdmin.viewElectionDetails;
 
 // Export admin panel functions
 window.showAdminTab = admin.showAdminTab;

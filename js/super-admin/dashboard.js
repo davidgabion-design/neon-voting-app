@@ -8,6 +8,7 @@ import { loadSuperApprovals } from './approvals.js';
 import { loadAdministrators } from './administrators.js';
 import { loadSuperSettings } from './settings.js';
 import { initializeDashboard } from './stats.js';
+import { loadRevokeElectionsList } from './revoke-elections.js';
 
 /**
  * Show Super Admin tab
@@ -16,10 +17,25 @@ import { initializeDashboard } from './stats.js';
 export function showSuperTab(tabId) {
   console.log("Showing super tab:", tabId);
 
-  // Highlight active button
-  document.querySelectorAll('[data-super-tab]').forEach(btn => {
-    btn.classList.toggle('active', btn.dataset.superTab === tabId);
-  });
+  // Highlight active button - More robust selector
+  const superTabsContainer = document.getElementById('superTabs');
+  if (superTabsContainer) {
+    superTabsContainer.querySelectorAll('[data-super-tab]').forEach(btn => {
+      if (btn.dataset.superTab === tabId) {
+        btn.classList.add('active');
+        console.log('✅ Activated tab button:', tabId);
+      } else {
+        btn.classList.remove('active');
+      }
+    });
+    // Force repaint to ensure visual update
+    void superTabsContainer.offsetHeight;
+  } else {
+    // Fallback to global selector
+    document.querySelectorAll('[data-super-tab]').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.superTab === tabId);
+    });
+  }
 
   // Hard switch Super Admin content panels
   document.querySelectorAll('[id^="superContent-"]').forEach(content => {
@@ -53,12 +69,14 @@ export function showSuperTab(tabId) {
         loadSuperApprovals?.();
       } else if (tabId === 'admins') {
         loadAdministrators?.();
+      } else if (tabId === 'revoke-elections') {
+        loadRevokeElectionsList?.();
       } else if (tabId === 'dashboard') {
         // ✅ PATCH: always refresh dashboard for live accuracy
         initializeDashboard();
       }
       // ✅ Mark loaded but allow approvals/dashboard to reload
-      if (tabId !== 'approvals' && tabId !== 'dashboard') {
+      if (tabId !== 'approvals' && tabId !== 'dashboard' && tabId !== 'revoke-elections') {
         tabContent.dataset.loaded = "true";
       }
     } catch (e) {

@@ -37,12 +37,13 @@ async function validateElectionRequirements() {
     const hasPositions = positions.length > 0;
     
     let allPositionsHaveCandidates = true;
+    const positionsWithoutCandidates = [];
     if (hasPositions) {
       for (const position of positions) {
         const positionCandidates = candidates.filter(c => c.data().positionId === position.id);
         if (positionCandidates.length === 0) {
           allPositionsHaveCandidates = false;
-          break;
+          positionsWithoutCandidates.push(position.data().name);
         }
       }
     } else {
@@ -55,7 +56,12 @@ async function validateElectionRequirements() {
     const requirements = [
       { name: 'Voters', met: hasVoters, count: activeVoters.length },
       { name: 'Positions', met: hasPositions, count: positions.length },
-      { name: 'Candidates', met: allPositionsHaveCandidates, count: candidates.length },
+      { 
+        name: 'Candidates', 
+        met: allPositionsHaveCandidates, 
+        count: candidates.length,
+        missingPositions: positionsWithoutCandidates 
+      },
       { name: 'Schedule', met: hasSchedule, count: hasSchedule ? 1 : 0 }
     ];
     
@@ -102,12 +108,13 @@ export async function loadECApproval() {
     
     // Check if all positions have at least one candidate
     let allPositionsHaveCandidates = true;
+    const positionsWithoutCandidates = [];
     if (hasPositions) {
       for (const position of positions) {
         const positionCandidates = candidates.filter(candidate => candidate.data().positionId === position.id);
         if (positionCandidates.length === 0) {
           allPositionsHaveCandidates = false;
-          break;
+          positionsWithoutCandidates.push(position.data().name);
         }
       }
     } else {
@@ -130,9 +137,14 @@ export async function loadECApproval() {
     const rejectionReason = org.approval?.rejectionReason || null;
     
     let html = `
-      <div style="margin-bottom:20px">
-        <h3><i class="fas fa-clipboard-check"></i> ${t('election_approval')}</h3>
-        <p class="subtext">Submit your election setup for SuperAdmin approval before voters can start voting.</p>
+      <div style="margin-bottom:20px;display:flex;justify-content:space-between;align-items:center">
+        <div>
+          <h3><i class="fas fa-clipboard-check"></i> ${t('election_approval')}</h3>
+          <p class="subtext">Submit your election setup for SuperAdmin approval before voters can start voting.</p>
+        </div>
+        <button class="btn neon-btn-outline" onclick="loadECApproval()" title="Refresh requirements check">
+          <i class="fas fa-sync-alt"></i> Refresh
+        </button>
       </div>
       
       <div class="card" style="margin-bottom:20px">
@@ -210,7 +222,7 @@ export async function loadECApproval() {
             <div>
               ${hasVoters ? 
                 `<span class="badge success"><i class="fas fa-check"></i> ${t('complete')}</span>` : 
-                `<button class="btn neon-btn-outline" onclick="showAddVoterModal()">${t('add_voters')}</button>`
+                `<button class="btn neon-btn-outline" onclick="window.showECTab && window.showECTab('voters')">${t('add_voters')}</button>`
               }
             </div>
           </div>
@@ -229,7 +241,7 @@ export async function loadECApproval() {
             <div>
               ${hasPositions ? 
                 `<span class="badge success"><i class="fas fa-check"></i> ${t('complete')}</span>` : 
-                `<button class="btn neon-btn-outline" onclick="showAddPositionModal()">${t('create_positions')}</button>`
+                `<button class="btn neon-btn-outline" onclick="window.showECTab && window.showECTab('positions')">${t('create_positions')}</button>`
               }
             </div>
           </div>
@@ -239,16 +251,21 @@ export async function loadECApproval() {
               <div class="requirement-checkbox ${allPositionsHaveCandidates ? 'checked' : ''}">
                 ${allPositionsHaveCandidates ? '<i class="fas fa-check"></i>' : ''}
               </div>
-              <div>
+              <div style="flex:1">
                 <div style="font-weight:bold">${t('add_candidates')}</div>
                 <div class="subtext">${t('all_positions_must_have')} ${t('candidate')}</div>
-                <div class="subtext">${t('current')}: ${candidates.length} candidates</div>
+                <div class="subtext">${t('current')}: ${candidates.length} candidates across ${positions.length} positions</div>
+                ${!allPositionsHaveCandidates && positionsWithoutCandidates.length > 0 ? `
+                  <div class="subtext" style="color:#ff9999;margin-top:5px">
+                    <i class="fas fa-exclamation-triangle"></i> Missing candidates for: ${positionsWithoutCandidates.join(', ')}
+                  </div>
+                ` : ''}
               </div>
             </div>
             <div>
               ${allPositionsHaveCandidates ? 
                 `<span class="badge success"><i class="fas fa-check"></i> ${t('complete')}</span>` : 
-                `<button class="btn neon-btn-outline" onclick="showAddCandidateModal()">${t('add_candidates')}</button>`
+                `<button class="btn neon-btn-outline" onclick="window.showECTab && window.showECTab('candidates')">${t('add_candidates')}</button>`
               }
             </div>
           </div>

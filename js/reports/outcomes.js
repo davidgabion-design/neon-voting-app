@@ -186,12 +186,19 @@ function renderOutcomesData(votes, positions, candidates, voters, el) {
         const counts = {};
         votes.forEach(v => {
           if (v.choices && v.choices[pos.id]) {
-            let candId = v.choices[pos.id];
-            // Handle case where candId might be an object (defensive)
-            if (typeof candId === 'object' && candId !== null) {
-              candId = candId.id || candId.candidateId || candId.name || String(candId);
-            }
-            counts[candId] = (counts[candId] || 0) + 1;
+            const choice = v.choices[pos.id];
+            // Handle both single candidates and arrays (multi-choice)
+            const candidates = Array.isArray(choice) ? choice : [choice];
+            
+            candidates.forEach(candId => {
+              // Handle case where candId might be an object (defensive)
+              if (typeof candId === 'object' && candId !== null) {
+                candId = candId.id || candId.candidateId || candId.name || String(candId);
+              }
+              if (candId) {
+                counts[candId] = (counts[candId] || 0) + 1;
+              }
+            });
           }
         });
         

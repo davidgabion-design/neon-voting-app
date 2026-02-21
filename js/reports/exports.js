@@ -22,6 +22,23 @@ export async function loadImageAsBase64(url) {
   if (!url) return null;
   
   try {
+    // Handle data URIs - they're already in base64 format, return directly
+    if (url.startsWith('data:')) {
+      return url;
+    }
+    
+    // Handle blob URLs - they're already in memory
+    if (url.startsWith('blob:')) {
+      const response = await fetch(url);
+      const blob = await response.blob();
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      });
+    }
+    
     let blob;
     
     // Handle Firebase Storage URLs with SDK (avoids CORS)

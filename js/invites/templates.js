@@ -78,7 +78,7 @@ function replaceTemplateTokens(text, variables) {
 }
 
 export function buildVoterInviteTemplate({ voterName, orgName, orgId, email, appUrl }) {
-  const loginLink = `${appUrl}?role=voter&org=${orgId}`;
+  const loginLink = `${appUrl}?role=voter&org=${orgId}&email=${encodeURIComponent(email)}`;
   
   const subject = `🗳️ You're Invited to Vote - ${orgName}`;
   
@@ -281,12 +281,14 @@ export function buildECInviteTemplate({ ecName, orgName, orgId, password, appUrl
   };
 }
 
-export function buildVoterSmsInviteMessage({ voterName, orgName, orgId, appUrl }) {
-  return `Hi ${voterName}! You're invited to vote in ${orgName} election. Visit: ${appUrl}?role=voter&org=${orgId} Org ID: ${orgId} 🗳️`;
+export function buildVoterSmsInviteMessage({ voterName, orgName, orgId, phone, appUrl }) {
+  const phoneParam = phone ? `&phone=${encodeURIComponent(phone)}` : '';
+  return `Hi ${voterName}! You're invited to vote in ${orgName} election. Visit: ${appUrl}?role=voter&org=${orgId}${phoneParam} Org ID: ${orgId} 🗳️`;
 }
 
-export function buildVoterSmsAlertMessage({ voterName, orgName, orgId, appUrl, alertType }) {
-  const baseLink = `${appUrl}?role=voter&org=${orgId}`;
+export function buildVoterSmsAlertMessage({ voterName, orgName, orgId, phone, appUrl, alertType }) {
+  const phoneParam = phone ? `&phone=${encodeURIComponent(phone)}` : '';
+  const baseLink = `${appUrl}?role=voter&org=${orgId}${phoneParam}`;
 
   if (alertType === 'start') {
     return `🗳️ Hi ${voterName}! Voting is NOW OPEN for ${orgName}! Visit: ${baseLink} Org ID: ${orgId} Cast your vote now! ✅`;

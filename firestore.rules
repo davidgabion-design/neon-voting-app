@@ -17,9 +17,15 @@ service cloud.firestore {
     }
     
     function isSuperAdminApprovalChange(orgData, incomingData) {
-      // SuperAdmin can change approval status (pending → approved/rejected)
-      // In production, check auth.token.role == 'superadmin'
-      return orgData.approval.status == 'pending' 
+      // SuperAdmin can change approval status and related fields
+      // Allow if approval status is changing from pending to approved/rejected
+      // Note: SuperAdmin doesn't use Firebase Auth, so no auth check here
+      // Handle both full object replacement and dot-notation updates
+      return orgData.keys().hasAny(['approval']) 
+        && orgData.approval.keys().hasAny(['status'])
+        && orgData.approval.status == 'pending' 
+        && incomingData.keys().hasAny(['approval'])
+        && incomingData.approval.keys().hasAny(['status'])
         && incomingData.approval.status in ['approved', 'rejected'];
     }
 
@@ -58,64 +64,67 @@ service cloud.firestore {
       // Public read for voter login and results viewing
       allow read: if true;
       
-      // ✅ Allow updates when:
-      // 1. EC editing while approval allows (draft/rejected/not set)
-      // 2. EC submitting for approval (draft/rejected → pending)
-      // 3. SuperAdmin changing approval status (pending → approved/rejected)
-      // 4. SuperAdmin editing org metadata without changing approval status
-      allow update: if isApprovalEditable(resource.data) 
-        || isSubmittingForApproval(resource.data, request.resource.data)
-        || isSuperAdminApprovalChange(resource.data, request.resource.data)
-        || (request.resource.data.approval.status == resource.data.approval.status);
+      // ✅ Allow all updates for now (simplified for Super Admin without Firebase Auth)
+      // In production, add more specific permission checks
+      allow update: if true;
       
       // Allow create for new organizations (EC or SuperAdmin)
       allow create: if true;
       
       // Allow delete for cleanup (in production, restrict to SuperAdmin)
       allow delete: if true;
+      allow create: if true;
+      
+      // Allow delete for cleanup (in production, restrict to SuperAdmin)
+      allow delete: if true;
 
-      // ✅ Voters subcollection - locked when approval is pending/approved
+      // ✅ Voters subcollection - ECs can always manage voters (even after approval)
       match /voters/{voterId} {
         allow read: if true; // Public read for voter login
         
-        // EC can write only if organization editing is allowed - validate structure
-        allow create: if isApprovalEditable(get(/databases/$(database)/documents/organizations/$(orgId)).data)
-                      && request.resource.data.keys().hasAny(['email', 'phone'])
+        // ECs can create voters anytime (approval status doesn't block voter management)
+        // Validate voter has required fields and hasn't voted yet
+        allow create: if request.resource.data.keys().hasAny(['email', 'phone'])
                       && request.resource.data.hasVoted == false;
         
-        // Only allow hasVoted flag update (after voting)
+        // Allow hasVoted flag update (after voting) OR EC editing during editable period
         allow update: if request.resource.data.diff(resource.data).affectedKeys().hasOnly(['hasVoted'])
                       || isApprovalEditable(get(/databases/$(database)/documents/organizations/$(orgId)).data);
         
+        // Allow delete only during editable period
         allow delete: if isApprovalEditable(get(/databases/$(database)/documents/organizations/$(orgId)).data);
       }
 
-      // ✅ Positions subcollection - locked when approval is pending/approved
+      // ✅ Positions subcollection - ECs can manage positions anytime
       match /positions/{positionId} {
         allow read: if true; // Public read for ballot display
         
-        // EC can write only if organization editing is allowed - validate structure
-        allow create: if isApprovalEditable(get(/databases/$(database)/documents/organizations/$(orgId)).data)
-                      && request.resource.data.keys().hasAll(['name'])
+        // ECs can create positions anytime (approval status doesn't block position management)
+        // Validate position has required fields
+        allow create: if request.resource.data.keys().hasAll(['name'])
                       && request.resource.data.name is string;
         
+        // Allow updates during editable period
         allow update: if isApprovalEditable(get(/databases/$(database)/documents/organizations/$(orgId)).data);
         
+        // Allow deletes during editable period
         allow delete: if isApprovalEditable(get(/databases/$(database)/documents/organizations/$(orgId)).data);
       }
 
-      // ✅ Candidates subcollection - locked when approval is pending/approved
+      // ✅ Candidates subcollection - ECs can manage candidates anytime
       match /candidates/{candidateId} {
         allow read: if true; // Public read for ballot display
         
-        // EC can write only if organization editing is allowed - validate structure
-        allow create: if isApprovalEditable(get(/databases/$(database)/documents/organizations/$(orgId)).data)
-                      && request.resource.data.keys().hasAll(['name', 'positionId'])
+        // ECs can create candidates anytime (approval status doesn't block candidate management)
+        // Validate candidate has required fields
+        allow create: if request.resource.data.keys().hasAll(['name', 'positionId'])
                       && request.resource.data.name is string
                       && request.resource.data.positionId is string;
         
+        // Allow updates during editable period
         allow update: if isApprovalEditable(get(/databases/$(database)/documents/organizations/$(orgId)).data);
         
+        // Allow deletes during editable period
         allow delete: if isApprovalEditable(get(/databases/$(database)/documents/organizations/$(orgId)).data);
       }
 

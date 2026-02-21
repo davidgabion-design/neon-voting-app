@@ -200,10 +200,21 @@ export function showAdminTab(tabId) {
   const el = document.getElementById(`adminContent-${tabId}`);
   if (el) delete el.dataset.loaded;
   
-  // Update active nav item
-  document.querySelectorAll('[data-admin-tab]').forEach(btn => {
-    btn.classList.toggle('active', btn.dataset.adminTab === tabId);
-  });
+  // Update active nav item - More robust
+  const adminNav = document.querySelector('#adminPanel .sidebar-nav');
+  if (adminNav) {
+    adminNav.querySelectorAll('[data-admin-tab]').forEach(btn => {
+      if (btn.dataset.adminTab === tabId) {
+        btn.classList.add('active');
+      } else {
+        btn.classList.remove('active');
+      }
+    });
+  } else {
+    document.querySelectorAll('[data-admin-tab]').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.adminTab === tabId);
+    });
+  }
   
   // Update active content
   document.querySelectorAll('.tab-content').forEach(content => {

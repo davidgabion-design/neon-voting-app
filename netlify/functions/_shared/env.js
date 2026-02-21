@@ -110,7 +110,7 @@ function getTwilioStatusCallbackUrl() {
   try {
     // eslint-disable-next-line no-new
     new URL(url);
-  } catch (e) {
+  } catch {
     const err = new Error('TWILIO_STATUS_CALLBACK_URL must be a valid absolute URL');
     err.code = 'ENV_INVALID_URL';
     throw err;
@@ -144,7 +144,7 @@ function getAppUrl() {
   try {
     // eslint-disable-next-line no-new
     new URL(url);
-  } catch (e) {
+  } catch {
     const err = new Error('APP_URL must be a valid absolute URL');
     err.code = 'ENV_INVALID_URL';
     throw err;

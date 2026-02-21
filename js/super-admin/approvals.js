@@ -373,7 +373,8 @@ window.confirmApproval = async function(orgId) {
     // Get existing approval data to preserve it
     const orgRef = doc(db, "organizations", orgId);
     const orgSnap = await getDoc(orgRef);
-    const existingApproval = orgSnap.data()?.approval || {};
+    const orgData = orgSnap.data();
+    const existingApproval = orgData?.approval || {};
     const existingHistory = existingApproval.history || [];
     
     // Append approval to history
@@ -386,11 +387,11 @@ window.confirmApproval = async function(orgId) {
     // ✅ PATCH: unlock voting on approval
     await updateDoc(orgRef, {
       approval: {
-        ...existingApproval,  // ✅ PRESERVE requestedAt, requestedBy, organizationName
-        status: "approved",
+        ...existingApproval,
+        status: 'approved',
         approvedAt: serverTimestamp(),
-        approvedBy: "superadmin",
-        comments: comments || '',  // Add approval comments
+        approvedBy: 'superadmin',
+        comments: comments || '',
         history: [...existingHistory, approvalEntry]
       },
       electionStatus: 'active',

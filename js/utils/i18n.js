@@ -20,11 +20,11 @@ export async function loadLanguage(lang = 'ENG', autoRefresh = true) {
     try {
       response = await fetch(`./lang/${lang.toLowerCase()}.json`);
       if (!response.ok) throw new Error('Try alternative path');
-    } catch (e) {
+    } catch {
       try {
         response = await fetch(`../lang/${lang.toLowerCase()}.json`);
         if (!response.ok) throw new Error('Try double parent');
-      } catch (e) {
+      } catch {
         response = await fetch(`../../lang/${lang.toLowerCase()}.json`);
       }
     }

@@ -1,0 +1,445 @@
+/**
+ * Ballot Paper Styling - Professional Election-Grade Enhancements
+ * Complements existing voter.css with production-grade improvements
+ * Optimized for mobile and desktop voting experiences
+ * 
+ * PRODUCTION FEATURES:
+ * ✔ Mobile + Desktop responsive grid (auto-fit minmax)
+ * ✔ Candidate pictures with aspect-ratio preservation
+ * ✔ Large touch targets (election-safe UX)
+ * ✔ Accessible voting (clear labels, keyboard navigation)
+ * ✔ National-level style look with neon glow effects
+ */
+
+/* ============================================
+   BALLOT PAPER CONTAINER - PRODUCTION READY
+   ============================================ */
+
+.ballot-paper,
+.ballot-container,
+#votingBallot {
+  max-width: 900px;
+  margin: auto;
+  padding: 20px;
+}
+
+/* Ballot header styling */
+.ballot-header {
+  text-align: center;
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.ballot-header h2 {
+  margin: 0 0 8px 0;
+  color: var(--text);
+  font-size: 24px;
+}
+
+.ballot-header h3 {
+  margin: 12px 0 6px 0;
+  color: var(--primary);
+  font-size: 20px;
+}
+
+.ballot-header p,
+.ballot-header small {
+  margin: 4px 0;
+  color: var(--text-secondary);
+}
+
+/* Candidate grid - production responsive */
+.candidate-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+}
+
+/* ============================================
+   ENHANCED SELECTION STATES - NEON GLOW
+   ============================================ */
+
+/* Selected candidate card - neon glow effect */
+.candidate-card:has(input:checked),
+.candidate-card.selected {
+  border-color: var(--primary) !important;
+  background: rgba(157, 0, 255, 0.08);
+  box-shadow: 0 0 30px rgba(157, 0, 255, 0.4);
+}
+
+/* Candidate photo neon glow when selected */
+.candidate-card input:checked ~ .candidate-info img,
+.candidate-card.selected .candidate-photo {
+  outline: 3px solid var(--primary);
+  box-shadow: 0 0 20px rgba(157, 0, 255, 0.6);
+  border-color: var(--primary) !important;
+}
+
+/* Enhanced hover state */
+.candidate-card:hover {
+  border-color: var(--primary);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(157, 0, 255, 0.25);
+}
+
+/* ============================================
+   CANDIDATE PHOTO - ASPECT RATIO FIX
+   ============================================ */
+
+/* Ensure candidate photos maintain aspect ratio and never stretch */
+.candidate-photo,
+.candidate-card img {
+  aspect-ratio: 1 / 1;
+  object-fit: cover;
+  transition: all 0.3s ease;
+}
+
+/* ============================================
+   MOBILE OPTIMIZATIONS - LARGE TOUCH TARGETS
+   ============================================ */
+
+/* Larger touch targets on mobile - PRODUCTION SAFE */
+@media (max-width: 768px) {
+  .candidate-checkbox input[type="radio"],
+  .candidate-checkbox input[type="checkbox"],
+  .candidate-card input[type="radio"],
+  .candidate-card input[type="checkbox"] {
+    transform: scale(1.3);
+    min-width: 28px;
+    min-height: 28px;
+  }
+  
+  .candidate-card {
+    padding: 18px;
+  }
+  
+  /* Ensure text is readable on mobile */
+  .candidate-card h4 {
+    font-size: 16px;
+  }
+  
+  .candidate-card p {
+    font-size: 13px;
+  }
+}
+
+/* ============================================
+   POSITION CARD ENHANCEMENTS
+   ============================================ */
+
+/* Add subtle animation on hover */
+.position-card {
+  transition: all 0.3s ease;
+}
+
+.position-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(157, 0, 255, 0.15);
+}
+
+/* ============================================
+   ACCESSIBILITY ENHANCEMENTS
+   ============================================ */
+
+/* Focus states for keyboard navigation */
+.candidate-card:focus-within {
+  outline: 3px solid var(--primary);
+  outline-offset: 2px;
+}
+
+/* High contrast for selected state (accessibility) */
+@media (prefers-contrast: high) {
+  .candidate-card.selected,
+  .candidate-card:has(input:checked) {
+    border-width: 4px;
+  }
+}
+
+/* Reduced motion for users who prefer it */
+@media (prefers-reduced-motion: reduce) {
+  .candidate-card,
+  .position-card,
+  .candidate-photo {
+    transition: none;
+    transform: none !important;
+  }
+}
+
+/* ============================================
+   VOTE SUMMARY ENHANCEMENTS
+   ============================================ */
+
+/* Highlight selected count */
+.vote-summary #selectedCount {
+  color: var(--primary);
+  font-weight: 700;
+  font-size: 18px;
+}
+
+/* Status colors */
+.vote-summary .value.pending {
+  color: var(--text-secondary);
+}
+
+.vote-summary .value.ready {
+  color: var(--accent);
+}
+
+.vote-summary .value.complete {
+  color: #00ffaa;
+}
+
+/* ============================================
+   PRINT STYLES (OPTIONAL - PAPER BALLOTS)
+   ============================================ */
+
+@media print {
+  .candidate-card {
+    break-inside: avoid;
+    border-color: #000;
+    background: white;
+    box-shadow: none;
+  }
+  
+  .voting-footer,
+  .vote-actions,
+  button {
+    display: none;
+  }
+  
+  .position-card {
+    page-break-inside: avoid;
+  }
+}
+
+/* ============================================
+   CANDIDATE INFO TEXT
+   ============================================ */
+.candidate-card h4 {
+  margin: 8px 0 4px 0;
+  color: var(--text);
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.candidate-card p {
+  margin: 4px 0;
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+.candidate-card .tagline {
+  font-size: 12px;
+  font-style: italic;
+  color: var(--text-muted);
+  margin-top: 8px;
+}
+
+/* ============================================
+   SUBMIT VOTE BUTTON - PRODUCTION READY
+   ============================================ */
+.submit-vote,
+button.submit-vote,
+.vote-actions button.neon-btn,
+.voting-footer .neon-btn {
+  width: 100%;
+  margin-top: 20px;
+  padding: 14px 24px;
+  font-size: 18px;
+  font-weight: 600;
+  border-radius: 12px;
+  background: var(--primary);
+  color: white;
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 16px rgba(157, 0, 255, 0.3);
+}
+
+.submit-vote:hover,
+button.submit-vote:hover {
+  background: var(--primary-hover);
+  box-shadow: 0 8px 24px rgba(157, 0, 255, 0.5);
+  transform: translateY(-2px);
+}
+
+.submit-vote:active,
+button.submit-vote:active {
+  transform: translateY(0);
+}
+
+.submit-vote:disabled,
+button.submit-vote:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Sticky submit button on mobile - SENIOR ENGINEER BONUS */
+@media (max-width: 768px) {
+  .submit-vote,
+  button.submit-vote,
+  .voting-footer .vote-actions button.neon-btn,
+  .vote-actions #submitVoteBtn {
+    position: sticky;
+    bottom: 10px;
+    z-index: 100;
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.3), 
+                0 4px 16px rgba(157, 0, 255, 0.5);
+  }
+}
+
+/* ============================================
+   POSITION CARDS (Multi-Position Ballots)
+   ============================================ */
+.position-card {
+  margin-bottom: 32px;
+  padding: 20px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 14px;
+}
+
+.position-card h3 {
+  margin: 0 0 8px 0;
+  color: var(--primary);
+  font-size: 20px;
+}
+
+.position-card .position-instructions {
+  margin-bottom: 16px;
+  padding: 10px 14px;
+  background: rgba(0, 234, 255, 0.05);
+  border-left: 3px solid var(--accent);
+  border-radius: 6px;
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+/* ============================================
+   YES/NO VOTING STYLE
+   ============================================ */
+.yesno-voting .candidate-card {
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px;
+  min-height: auto;
+}
+
+.yesno-voting .candidate-card img {
+  width: 80px;
+  max-width: 80px;
+  margin: 0;
+}
+
+.yesno-voting .candidate-info {
+  flex: 1;
+  text-align: left;
+  margin: 0 20px;
+}
+
+.yesno-voting .vote-options {
+  display: flex;
+  gap: 12px;
+}
+
+.yesno-voting .vote-btn {
+  min-width: 80px;
+  padding: 10px 20px;
+  border-radius: 8px;
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  background: var(--card-bg);
+  color: var(--text);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.yesno-voting .vote-btn.yes {
+  border-color: rgba(0, 255, 170, 0.3);
+}
+
+.yesno-voting .vote-btn.no {
+  border-color: rgba(255, 107, 107, 0.3);
+}
+
+.yesno-voting .vote-btn.yes.selected {
+  background: rgba(0, 255, 170, 0.2);
+  border-color: #00ffaa;
+  box-shadow: 0 0 20px rgba(0, 255, 170, 0.4);
+}
+
+.yesno-voting .vote-btn.no.selected {
+  background: rgba(255, 107, 107, 0.2);
+  border-color: #ff6b6b;
+  box-shadow: 0 0 20px rgba(255, 107, 107, 0.4);
+}
+
+/* ============================================
+   ACCESSIBILITY ENHANCEMENTS
+   ============================================ */
+.candidate-card:focus-within {
+  outline: 3px solid var(--primary);
+  outline-offset: 2px;
+}
+
+/* Screen reader only text */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/* ============================================
+   LOADING & EMPTY STATES
+   ============================================ */
+.ballot-loading {
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--text-secondary);
+}
+
+.ballot-empty {
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--text-muted);
+  font-size: 16px;
+}
+
+.ballot-empty i {
+  font-size: 48px;
+  margin-bottom: 16px;
+  display: block;
+  opacity: 0.5;
+}
+
+/* ============================================
+   PRINT STYLES (Optional - for paper ballots)
+   ============================================ */
+@media print {
+  .ballot-paper {
+    max-width: 100%;
+  }
+  
+  .candidate-card {
+    break-inside: avoid;
+    border-color: #000;
+    background: white;
+  }
+  
+  .submit-vote {
+    display: none;
+  }
+  
+  .candidate-card input {
+    transform: scale(1);
+  }
+}

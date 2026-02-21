@@ -132,6 +132,7 @@ export async function sendVoterInviteSMS(voterPhone, voterName) {
       voterName: voterName || "Voter",
       orgName: window.currentOrgData.name || window.currentOrgId,
       orgId: window.currentOrgId,
+      phone: formattedPhone,
       appUrl
     });
     

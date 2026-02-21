@@ -24,14 +24,14 @@ const componentCache = new Map();
  */
 export async function loadHTMLComponent(path, containerId, append = true) {
   try {
-    // Check cache first
     let html;
     if (componentCache.has(path)) {
       html = componentCache.get(path);
     } else {
-      const response = await fetch(path);
+      const response = await fetch(path, { cache: 'no-store' });
       if (!response.ok) {
-        throw new Error(`Failed to load ${path}: ${response.status} ${response.statusText}`);
+        console.warn(`[html-loader] fetch failed: ${path} ${response.status}`);
+        return { ok: false, reason: 'fetch_failed', status: response.status };
       }
       html = await response.text();
       componentCache.set(path, html);
@@ -39,7 +39,8 @@ export async function loadHTMLComponent(path, containerId, append = true) {
 
     const container = document.getElementById(containerId);
     if (!container) {
-      throw new Error(`Container element #${containerId} not found`);
+      console.warn(`[html-loader] target not found: ${containerId}`);
+      return { ok: false, reason: 'target_missing' };
     }
 
     if (append) {
@@ -49,9 +50,10 @@ export async function loadHTMLComponent(path, containerId, append = true) {
     }
 
     console.log(`✅ Loaded component: ${path}`);
+    return { ok: true };
   } catch (error) {
-    console.error(`❌ Error loading component ${path}:`, error);
-    throw error;
+    console.error(`[html-loader] loadComponent crashed: ${path}`, error);
+    return { ok: false, reason: 'exception', error: String(error?.message || error) };
   }
 }
 
@@ -62,15 +64,23 @@ export async function loadHTMLComponent(path, containerId, append = true) {
  */
 export async function loadHTMLComponents(components) {
   try {
-    await Promise.all(
+    const results = await Promise.all(
       components.map(({ path, containerId, append }) =>
         loadHTMLComponent(path, containerId, append)
       )
     );
+
+    const failed = results.filter(r => r && r.ok === false);
+    if (failed.length) {
+      console.warn('[html-loader] Some components failed to load:', failed);
+      return { ok: false, failed };
+    }
+
     console.log(`✅ All HTML components loaded successfully`);
+    return { ok: true };
   } catch (error) {
-    console.error('❌ Error loading HTML components:', error);
-    throw error;
+    console.error('[html-loader] Error loading components:', error);
+    return { ok: false, reason: 'exception', error: String(error?.message || error) };
   }
 }
 
@@ -85,7 +95,7 @@ export async function preloadComponents(paths) {
     await Promise.all(
       paths.map(async (path) => {
         if (!componentCache.has(path)) {
-          const response = await fetch(path);
+          const response = await fetch(path, { cache: 'no-store' });
           if (!response.ok) {
             throw new Error(`Failed to preload ${path}: ${response.status}`);
           }

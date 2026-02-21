@@ -48,6 +48,15 @@ export {
   reconsiderApproval
 } from './approvals.js';
 
+// Revoke Elections
+export {
+  loadRevokeElectionsList,
+  filterRevokeElections,
+  showRevokeElectionModal,
+  confirmRevokeElection,
+  viewElectionDetails
+} from './revoke-elections.js';
+
 // Administrators Management
 export {
   loadAdministrators

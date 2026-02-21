@@ -1,15 +1,14 @@
 // js/utils/session.js - Session Management Functions
 
 import { SESSION_KEY } from '../config/constants.js';
-import { safeJsonParse, getStorageJson, setStorageJson } from './json-helpers.js';
 
-let session = getStorageJson(SESSION_KEY, {});
+let session = JSON.parse(localStorage.getItem(SESSION_KEY) || "{}");
 
 /**
  * Save current session to localStorage
  */
 export function saveSession() {
-  setStorageJson(SESSION_KEY, session);
+  localStorage.setItem(SESSION_KEY, JSON.stringify(session));
   
   // Make session available globally
   try {

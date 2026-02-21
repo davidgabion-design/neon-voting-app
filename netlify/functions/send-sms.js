@@ -20,7 +20,7 @@ exports.handler = async (event) => {
   let body;
   try {
     body = JSON.parse(event.body || "{}");
-  } catch (e) {
+  } catch {
     return {
       statusCode: 400,
       headers: {

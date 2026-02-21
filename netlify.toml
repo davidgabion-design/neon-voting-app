@@ -1,9 +1,16 @@
+functionsDirectory = "C:\\Users\\RealTimeIT\\Desktop\\voting-app\\netlify\\functions"
+functionsDirectoryOrigin = "config-v1"
+headersOrigin = "config"
+redirectsOrigin = "config"
+plugins = []
+
 [build]
-  publish = "."
-  functions = "netlify/functions"
+publish = "C:\\Users\\RealTimeIT\\Desktop\\voting-app"
+publishOrigin = "config"
+functions = "C:\\Users\\RealTimeIT\\Desktop\\voting-app\\netlify\\functions"
 
   [build.environment]
-    SECRETS_SCAN_ENABLED = "false"
+  SECRETS_SCAN_ENABLED = "false"
 
   [build.processing]
 
@@ -22,24 +29,32 @@
   [functions."*"]
   node_bundler = "esbuild"
 
-# Security headers for all routes
 [[headers]]
-  for = "/*"
+for = "/*"
+
   [headers.values]
-    # Prevent clickjacking
-    X-Frame-Options = "DENY"
-    # Prevent MIME type sniffing
-    X-Content-Type-Options = "nosniff"
-    # Enable XSS protection
-    X-XSS-Protection = "1; mode=block"
-    # Referrer policy
-    Referrer-Policy = "strict-origin-when-cross-origin"
-    # Enforce HTTPS
-    Strict-Transport-Security = "max-age=31536000; includeSubDomains; preload"
-    # Content Security Policy - Updated to include Firebase CDN
-    Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.gstatic.com https://*.firebaseio.com https://apis.google.com https://cdn.jsdelivr.net https://www.googletagmanager.com; connect-src 'self' https://*.firebaseio.com https://*.googleapis.com https://firebasestorage.googleapis.com https://www.gstatic.com https://www.google-analytics.com https://analytics.google.com wss://*.firebaseio.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src 'self' data: https://fonts.gstatic.com https://cdnjs.cloudflare.com; img-src 'self' data: blob: https: https://firebasestorage.googleapis.com https://www.googletagmanager.com; frame-src 'none'; object-src 'none'; frame-ancestors 'none';"
-    # Permissions Policy (formerly Feature-Policy)
-    Permissions-Policy = "geolocation=(), microphone=(), camera=(), payment=()"
+  X-Frame-Options = "DENY"
+  X-Content-Type-Options = "nosniff"
+  X-XSS-Protection = "1; mode=block"
+  Referrer-Policy = "strict-origin-when-cross-origin"
+  Strict-Transport-Security = "max-age=31536000; includeSubDomains; preload"
+  Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.gstatic.com https://*.firebaseio.com https://apis.google.com https://cdn.jsdelivr.net; connect-src 'self' data: blob: https://*.firebaseio.com https://*.googleapis.com https://firebasestorage.googleapis.com https://www.gstatic.com wss://*.firebaseio.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src 'self' data: https://fonts.gstatic.com https://cdnjs.cloudflare.com; img-src 'self' data: blob: https: https://firebasestorage.googleapis.com; frame-src 'none'; object-src 'none'; frame-ancestors 'none';"
+  Permissions-Policy = "geolocation=(), microphone=(), camera=(), payment=()"
+  Cache-Control = "no-store, no-cache, must-revalidate, max-age=0"
+
+# PATCH START — Prevent JS caching to avoid stale code on voter devices
+[[headers]]
+for = "/*.js"
+
+  [headers.values]
+  Cache-Control = "no-store, no-cache, must-revalidate, max-age=0"
+
+[[headers]]
+for = "/js/*.js"
+
+  [headers.values]
+  Cache-Control = "no-store, no-cache, must-revalidate, max-age=0"
+# PATCH END
 
 [[redirects]]
 from = "/api/*"

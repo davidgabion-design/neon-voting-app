@@ -1,0 +1,160 @@
+<!-- 
+  BALLOT PAPER SAMPLE - Production-Ready Template
+  This is a reference implementation showing how to structure ballots
+  The actual ballot is rendered dynamically by js/voter/voting.js
+-->
+
+<section id="ballotSample" class="ballot-paper" style="display:none">
+  
+  <!-- Ballot Header -->
+  <header class="ballot-header">
+    <h2>🗳️ Neon Voting System</h2>
+    <p>Election: National Executive Elections</p>
+    <h3>Position: PRESIDENT</h3>
+    <small>Select ONE candidate</small>
+  </header>
+
+  <!-- Single-Choice Position -->
+  <div class="position-card">
+    <h3>President</h3>
+    <div class="position-instructions">
+      <i class="fas fa-info-circle"></i> Select ONE candidate for this position
+    </div>
+    
+    <div class="candidate-grid">
+      
+      <!-- Candidate Card 1 -->
+      <label class="candidate-card">
+        <input type="radio" name="president" value="cand1" aria-label="Select John Mensah">
+        <img src="/neon-logo.png" alt="John Mensah photo">
+        <h4>John Mensah</h4>
+        <p>Unity Front</p>
+        <p class="tagline">Building bridges, creating unity</p>
+      </label>
+
+      <!-- Candidate Card 2 -->
+      <label class="candidate-card">
+        <input type="radio" name="president" value="cand2" aria-label="Select Ama Kusi">
+        <img src="/neon-logo.png" alt="Ama Kusi photo">
+        <h4>Ama Kusi</h4>
+        <p>Progressive Movement</p>
+        <p class="tagline">Progress through innovation</p>
+      </label>
+
+      <!-- Candidate Card 3 -->
+      <label class="candidate-card">
+        <input type="radio" name="president" value="cand3" aria-label="Select Kwame Boateng">
+        <img src="/neon-logo.png" alt="Kwame Boateng photo">
+        <h4>Kwame Boateng</h4>
+        <p>Independent</p>
+        <p class="tagline">Servant leadership first</p>
+      </label>
+
+    </div>
+  </div>
+
+  <!-- Multi-Choice Position Example -->
+  <div class="position-card">
+    <h3>Board of Directors</h3>
+    <div class="position-instructions">
+      <i class="fas fa-check-double"></i> Select UP TO THREE candidates
+    </div>
+    
+    <div class="candidate-grid">
+      
+      <label class="candidate-card">
+        <input type="checkbox" name="board" value="board1" aria-label="Select Alice Dzifa">
+        <img src="/neon-logo.png" alt="Alice Dzifa photo">
+        <h4>Alice Dzifa</h4>
+        <p>Finance Expert</p>
+      </label>
+
+      <label class="candidate-card">
+        <input type="checkbox" name="board" value="board2" aria-label="Select Robert Asante">
+        <img src="/neon-logo.png" alt="Robert Asante photo">
+        <h4>Robert Asante</h4>
+        <p>Legal Counsel</p>
+      </label>
+
+      <label class="candidate-card">
+        <input type="checkbox" name="board" value="board3" aria-label="Select Grace Amponsah">
+        <img src="/neon-logo.png" alt="Grace Amponsah photo">
+        <h4>Grace Amponsah</h4>
+        <p>Education Specialist</p>
+      </label>
+
+      <label class="candidate-card">
+        <input type="checkbox" name="board" value="board4" aria-label="Select Samuel Osei">
+        <img src="/neon-logo.png" alt="Samuel Osei photo">
+        <h4>Samuel Osei</h4>
+        <p>Technology Director</p>
+      </label>
+
+    </div>
+  </div>
+
+  <!-- Yes/No Position Example -->
+  <div class="position-card yesno-voting">
+    <h3>Budget Approval</h3>
+    <div class="position-instructions">
+      <i class="fas fa-balance-scale"></i> Vote YES or NO on this proposal
+    </div>
+    
+    <label class="candidate-card">
+      <img src="/neon-logo.png" alt="Budget proposal">
+      <div class="candidate-info">
+        <h4>Approve 2026 Annual Budget</h4>
+        <p>Total Budget: $50,000</p>
+        <p class="tagline">Infrastructure: 40% | Programs: 35% | Administration: 25%</p>
+      </div>
+      <div class="vote-options">
+        <button type="button" class="vote-btn yes" data-vote="yes">
+          <i class="fas fa-check"></i> YES
+        </button>
+        <button type="button" class="vote-btn no" data-vote="no">
+          <i class="fas fa-times"></i> NO
+        </button>
+      </div>
+    </label>
+  </div>
+
+  <!-- Submit Button -->
+  <button class="btn btn-block neon-btn submit-vote" onclick="submitVote()">
+    <i class="fas fa-paper-plane"></i> Submit Vote
+  </button>
+
+  <!-- Ballot Footer Info -->
+  <div class="subtext" style="margin-top:16px;text-align:center">
+    <i class="fas fa-shield-check"></i> Your vote is encrypted and anonymous
+  </div>
+
+</section>
+
+<!-- 
+  INTEGRATION NOTES:
+  
+  1. This template shows the structure - actual ballots are rendered by:
+     js/voter/voting.js → loadVotingBallot()
+  
+  2. The CSS classes used here match the dynamic rendering:
+     - .ballot-paper
+     - .position-card
+     - .candidate-grid
+     - .candidate-card
+     - .submit-vote
+  
+  3. Mobile behavior:
+     - Sticky submit button on phones (<768px)
+     - 1 column on mobile, 2-4 on desktop
+     - Large touch targets (28px on mobile)
+  
+  4. Accessibility:
+     - aria-label on inputs
+     - keyboard navigation support
+     - screen reader compatible
+  
+  5. Selection states:
+     - Neon glow on selected candidates
+     - Visual feedback on hover
+     - Clear active state indication
+-->

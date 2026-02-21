@@ -171,6 +171,11 @@ export async function savePosition() {
     showToast('Position added successfully', 'success');
     document.querySelector('.modal-overlay')?.remove();
     loadECPositions();
+    
+    // Refresh approval tab if it's loaded (to update requirements check)
+    if (typeof window.loadECApproval === 'function') {
+      window.loadECApproval();
+    }
   } catch(e) {
     console.error('Error adding position:', e);
     showToast('Error adding position: ' + e.message, 'error');

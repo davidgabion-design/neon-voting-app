@@ -94,9 +94,16 @@ export function updateConnectionStatus() {
 
 /**
  * Check if Service Worker is supported and registered
- * @returns {Promise<boolean>} True if Service Worker is active
+ * DEPRECATED: Service Worker removed for voting stability
+ * @returns {Promise<boolean>} Always returns false
  */
 export async function isServiceWorkerActive() {
+  // PATCH START — Service Worker permanently disabled
+  // Always return false since SW has been removed from the system
+  return false;
+  // PATCH END
+  
+  /* ORIGINAL CODE DISABLED
   if (!('serviceWorker' in navigator)) {
     return false;
   }
@@ -108,6 +115,7 @@ export async function isServiceWorkerActive() {
     console.error('Error checking Service Worker:', error);
     return false;
   }
+  */
 }
 
 /**

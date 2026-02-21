@@ -3,10 +3,12 @@
  * Handles vote submission, post-vote dashboard, and live results
  */
 
-import { db, auth } from '../config/firebase.js';
+import { db } from '../config/firebase.js';
 import { 
   doc, 
   getDoc, 
+  getDocs,
+  collection,
   writeBatch, 
   serverTimestamp, 
   increment 
@@ -21,35 +23,12 @@ import { getSelectedCandidates, clearSelectedCandidates } from './voting.js';
 let voterSession = null;
 let session = {};
 let voterCountdownInterval = null;
-let isSubmitting = false;
 
-// Rebuild voter session from localStorage/window/sessionStorage
+// Rebuild voter session from stored globals/sessionStorage if missing
 function hydrateVoterSession() {
   if (voterSession) return voterSession;
 
   try {
-    // Priority 1: Try localStorage-based session (most reliable)
-    if (window.loadVoterSession) {
-      const lsSession = window.loadVoterSession();
-      if (lsSession) {
-        voterSession = {
-          orgId: lsSession.orgId,
-          voterDocId: lsSession.voterDocId,
-          voterKey: lsSession.voterDocId,
-          email: lsSession.voterEmail || '',
-          phone: lsSession.voterPhone || '',
-          voterData: {
-            name: lsSession.voterName,
-            email: lsSession.voterEmail,
-            phone: lsSession.voterPhone
-          }
-        };
-        console.log('[hydrateVoterSession] ✅ Loaded from localStorage:', voterSession.voterDocId);
-        return voterSession;
-      }
-    }
-
-    // Priority 2: Fallback to window/sessionStorage (legacy)
     const orgId = window.currentOrgId || sessionStorage.getItem('voterOrgId');
     const voterDocId = window.voterDocId || sessionStorage.getItem('voterDocId');
     const voterData = window.voterData || JSON.parse(sessionStorage.getItem('voterData') || '{}');
@@ -63,10 +42,9 @@ function hydrateVoterSession() {
         phone: voterData?.phone || '',
         voterData
       };
-      console.log('[hydrateVoterSession] ✅ Loaded from window/sessionStorage:', voterSession.voterDocId);
     }
   } catch (e) {
-    console.warn('[hydrateVoterSession] Failed:', e);
+    console.warn('hydrateVoterSession failed', e);
   }
 
   return voterSession;
@@ -76,20 +54,6 @@ function hydrateVoterSession() {
  * Submit voter's ballot
  */
 export async function submitVote() {
-  // 🔒 SECURITY: Prevent double-submit
-  if (isSubmitting) {
-    console.warn('[submitVote] Already submitting, ignoring duplicate call');
-    return;
-  }
-
-  // 🔒 SECURITY: Verify Firebase Auth state
-  if (!auth?.currentUser) {
-    showToast('Authentication expired. Please refresh and login again.', 'error');
-    clearVoterSession();
-    showScreen('voterLoginScreen');
-    return;
-  }
-
   if (!hydrateVoterSession()) {
     showToast('Voter session not found. Please login again.', 'error');
     showScreen('voterLoginScreen');
@@ -128,15 +92,12 @@ export async function submitVote() {
 
   if (!confirm('Submit your vote? This action cannot be undone.')) return;
 
-  // 🔒 Set submission lock and disable button
-  isSubmitting = true;
-  const submitBtn = document.getElementById('submitVoteBtn');
-  if (submitBtn) {
-    submitBtn.disabled = true;
-    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting...';
-  }
-
   try {
+    // Fetch current candidates to validate selections
+    const candidatesSnap = await getDocs(collection(db, "organizations", voterSession.orgId, "candidates"));
+    const validCandidateIds = [];
+    candidatesSnap.forEach(c => validCandidateIds.push(c.id));
+    
     const batch = writeBatch(db);
 
     // Use canonical vote doc id = voterKey (prevents double voting)
@@ -162,6 +123,14 @@ export async function submitVote() {
         }
         return String(item);
       });
+      
+      // Validate all candidate IDs exist (except yes/no)
+      cleanArr.forEach(candidateId => {
+        if (candidateId && candidateId !== 'yes' && candidateId !== 'no' && !validCandidateIds.includes(candidateId)) {
+          throw new Error(`Invalid candidate selection: ${candidateId}`);
+        }
+      });
+      
       choices[pid] = cleanArr.length <= 1 ? (cleanArr[0] || null) : cleanArr;
     });
 
@@ -173,9 +142,7 @@ export async function submitVote() {
       voterName: voterSession.voterData?.name || voterSession.email || voterSession.phone || "Voter",
       choices,
       votedAt: serverTimestamp(),
-      userAgent: navigator.userAgent,
-      authUid: auth.currentUser.uid,
-      authProvider: 'firebase-anonymous'
+      userAgent: navigator.userAgent
     };
 
     batch.set(voteRef, voteData);
@@ -193,7 +160,7 @@ export async function submitVote() {
 
     await writeAudit(voterSession.orgId, "VOTE_SUBMITTED", voteDocId, { positions: Object.keys(choices).length });
 
-    // Clear voter session (in-memory and all storage)
+    // Clear voter session (in-memory and sessionStorage)
     voterSession = null;
     clearSelectedCandidates();
     session.voterSession = null;
@@ -204,34 +171,11 @@ export async function submitVote() {
     sessionStorage.removeItem('voterOrgId');
     sessionStorage.removeItem('voterData');
 
-    // Re-enable submit button on success (though user will be redirected)
-    if (submitBtn) {
-      submitBtn.disabled = false;
-      submitBtn.innerHTML = '<i class="fas fa-check"></i> Vote Submitted';
-    }
-    sessionStorage.removeItem('voterDocId');
-    
-    // Clear localStorage session (new storage layer)
-    if (window.clearVoterSession) {
-      window.clearVoterSession();
-    }
-    
-    // Also clear legacy localStorage keys
-    localStorage.removeItem('neon_voter_session');
-
     showToast('✅ Vote submitted successfully!', 'success');
     showScreen('gatewayScreen');
   } catch (error) {
     console.error('Error submitting vote:', error);
     showToast('Failed to submit vote. Please try again.', 'error');
-    
-    // Re-enable button on error
-    if (submitBtn) {
-      submitBtn.disabled = false;
-      submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> <span data-i18n="submit_vote">Submit Vote</span>';
-    }
-  } finally {
-    isSubmitting = false;
   }
 }
 

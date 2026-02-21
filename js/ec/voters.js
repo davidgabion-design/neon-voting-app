@@ -397,6 +397,11 @@ export async function addVoterWithCredential() {
     // Close modal and reload
     document.querySelector('.modal-overlay')?.remove();
     if (typeof loadECVoters === 'function') loadECVoters();
+    
+    // Refresh approval tab if it's loaded (to update requirements check)
+    if (typeof window.loadECApproval === 'function') {
+      window.loadECApproval();
+    }
 
   } catch (error) {
     console.error("Error adding voter:", error);

@@ -17,141 +17,11 @@
    BALLOT CONTAINER & LAYOUT
    ============================================ */
 
-.ballot-shell {
-  width: 100%;
-  max-width: 1100px;
-  margin: 0 auto;
-  padding: 16px;
-}
-
-
-.pending-vote-banner {
-  position: relative;
-  margin-bottom: 18px;
-  transition: opacity 0.25s ease;
-}
-
-.pending-vote-banner.hidden {
-  display: none;
-}
-
-.pending-vote-content {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 14px;
-  align-items: center;
-  justify-content: space-between;
-  padding: 14px 16px;
-  border-radius: 16px;
-  border: 1px solid rgba(0, 255, 170, 0.25);
-  background: rgba(0, 255, 170, 0.06);
-}
-
-.pending-vote-content.warning {
-  border-color: rgba(255, 170, 0, 0.45);
-  background: rgba(255, 170, 0, 0.08);
-}
-
-.pending-vote-title {
-  font-size: 14px;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.pending-vote-message {
-  font-size: 13px;
-  color: var(--text-muted);
-  max-width: 480px;
-}
-.ballot-paper {
-  position: relative;
-  background: linear-gradient(145deg, rgba(5, 8, 22, 0.96), rgba(9, 20, 48, 0.96));
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 28px;
-  padding: 28px;
-  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.45);
-  overflow: hidden;
-}
-
-.ballot-paper::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background-image: radial-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 0);
-  background-size: 140px 140px;
-  opacity: 0.4;
-  pointer-events: none;
-}
-
-.ballot-ribbon {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  padding: 6px 20px;
-  border-radius: 999px;
-  background: linear-gradient(120deg, #00ffaa, #00eaff);
-  color: #050816;
-  text-transform: uppercase;
-  letter-spacing: 2px;
-  font-size: 11px;
-  font-weight: 900;
-  box-shadow: 0 12px 30px rgba(0, 255, 170, 0.35);
-}
-
-.ballot-meta {
-  position: relative;
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 16px;
-  margin: 20px 0 30px;
-}
-
-.meta-card {
-  background: rgba(255, 255, 255, 0.02);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 18px;
-  padding: 14px 18px;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.meta-label {
-  font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  color: var(--text-muted);
-  font-weight: 700;
-}
-
-.meta-value {
-  font-size: 20px;
-  font-weight: 900;
-  color: var(--text);
-}
-
-.meta-value-success {
-  color: #00ffaa;
-}
-
-.meta-value-warning {
-  color: #ffaa00;
-}
-
-.meta-sub {
-  font-size: 12px;
-  color: var(--text-muted);
-  opacity: 0.85;
-}
-
 .ballot-container {
   display: flex;
   flex-direction: column;
   gap: 24px;
   margin-top: 16px;
-  padding-top: 6px;
 }
 
 .voting-header {
@@ -175,17 +45,6 @@
   color: var(--text-muted);
   font-size: 14px;
   margin-bottom: 12px;
-}
-
-.ballot-header-actions {
-  display: flex;
-  justify-content: center;
-}
-
-@media (min-width: 768px) {
-  .ballot-header-actions {
-    justify-content: flex-end;
-  }
 }
 
 .empty-ballot {
@@ -307,31 +166,23 @@
 }
 
 /* ============================================
-   CANDIDATES GRID - RESPONSIVE
+   CANDIDATES GRID - PRODUCTION RESPONSIVE
+   Auto-fit responsive grid with 220px minimum card size
    ============================================ */
 
-.candidates-grid {
+.candidates-grid,
+.candidate-grid {
   display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 16px;
   margin-top: 12px;
-  grid-template-columns: 1fr;
 }
 
-@media (min-width: 600px) {
-  .candidates-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-
-@media (min-width: 900px) {
-  .candidates-grid {
-    grid-template-columns: repeat(3, 1fr);
-  }
-}
-
-@media (min-width: 1280px) {
-  .candidates-grid {
-    grid-template-columns: repeat(4, 1fr);
+/* Mobile optimization - ensure single column on very small screens */
+@media (max-width: 480px) {
+  .candidates-grid,
+  .candidate-grid {
+    grid-template-columns: 1fr;
   }
 }
 
@@ -354,32 +205,40 @@
    CANDIDATE CARDS
    ============================================ */
 
-
 .candidate-card {
   position: relative;
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  border: 2px solid rgba(255, 255, 255, 0.12);
   background: rgba(255, 255, 255, 0.04);
-  border-radius: 18px;
-  padding: 18px;
+  border-radius: 14px;
+  padding: 14px;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.25s ease;
   display: flex;
   flex-direction: column;
   gap: 12px;
-  min-height: 160px;
-  touch-action: manipulation;
+  min-height: 140px;
+  text-align: center;
 }
 
 .candidate-card:hover {
-  border-color: rgba(0, 255, 255, 0.28);
+  border-color: var(--primary);
   transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 8px 24px rgba(157, 0, 255, 0.25);
 }
 
-.candidate-card.selected {
-  border-color: rgba(0, 255, 170, 0.65);
-  background: rgba(0, 255, 170, 0.05);
-  box-shadow: 0 0 0 3px rgba(0, 255, 170, 0.12), 0 10px 26px rgba(0, 255, 170, 0.15);
+.candidate-card.selected,
+.candidate-card:has(input:checked) {
+  border-color: var(--primary) !important;
+  background: rgba(157, 0, 255, 0.08);
+  box-shadow: 0 0 30px rgba(157, 0, 255, 0.4);
+}
+
+/* Selection highlight on candidate photo */
+.candidate-card.selected .candidate-photo,
+.candidate-card:has(input:checked) .candidate-photo {
+  outline: 3px solid var(--primary);
+  box-shadow: 0 0 20px rgba(157, 0, 255, 0.6);
+  border-color: var(--primary) !important;
 }
 
 /* Checkbox/Radio container */
@@ -394,9 +253,9 @@
 .candidate-checkbox input[type="radio"] {
   appearance: none;
   -webkit-appearance: none;
-  width: 26px;
-  height: 26px;
-  border: 2px solid rgba(255, 255, 255, 0.35);
+  width: 24px;
+  height: 24px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
   border-radius: 50%;
   background: rgba(0, 0, 0, 0.3);
   cursor: pointer;
@@ -436,11 +295,11 @@
 
 .candidate-photo {
   width: 100%;
-  aspect-ratio: 4 / 3;
+  height: 120px;
   object-fit: cover;
-  border-radius: 14px;
-  background: rgba(0, 0, 0, 0.25);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .candidate-details {
@@ -602,20 +461,4 @@
   font-size: 12px;
   text-align: right;
   max-width: 60%;
-}
-
-/* ============================================
-   MOBILE STICKY SUBMIT BUTTON
-   ============================================ */
-
-@media (max-width: 600px) {
-  #votingScreen .btn-block {
-    position: sticky;
-    bottom: 0;
-    background: var(--surface);
-    padding: 12px;
-    margin: 0 -12px;
-    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.3);
-    z-index: 100;
-  }
 }

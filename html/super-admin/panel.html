@@ -36,6 +36,10 @@
         <i class="fas fa-user-shield"></i>
         <span data-i18n="administrators">Administrators</span>
       </button>
+      <button class="tab-btn" data-super-tab="revoke-elections">
+        <i class="fas fa-ban"></i>
+        <span data-i18n="revoke_elections">Revoke Elections</span>
+      </button>
 
       <div style="flex:1"></div>
 
@@ -233,6 +237,43 @@
       <!-- Administrators Tab -->
       <div id="superContent-admins" style="display:none">
         <!-- Content will be dynamically loaded by administrators.js -->
+      </div>
+      
+      <!-- Revoke Elections Tab -->
+      <div id="superContent-revoke-elections" style="display:none">
+        <h3 style="margin:0 0 12px"><i class="fas fa-ban"></i> <span data-i18n="revoke_elections">Revoke Elections</span></h3>
+        <div class="subtext" style="margin-bottom:16px" data-i18n="revoke_elections_desc">
+          Revoke active or completed elections in case of security breaches or irregularities. This action is irreversible.
+        </div>
+        
+        <!-- Search & Filter -->
+        <div class="card" style="margin-bottom:20px;padding:16px">
+          <div style="display:grid;grid-template-columns:1fr auto auto;gap:10px">
+            <input 
+              type="text" 
+              id="revokeElectionSearch" 
+              class="input" 
+              placeholder="Search by Organization ID or name..."
+              onkeyup="filterRevokeElections()"
+              style="flex:1"
+            >
+            <select id="revokeElectionStatusFilter" class="input" onchange="filterRevokeElections()" style="max-width:200px">
+              <option value="all">All Statuses</option>
+              <option value="active" selected>Active Elections</option>
+              <option value="ended">Ended Elections</option>
+              <option value="declared">Declared Elections</option>
+              <option value="revoked">Revoked Elections</option>
+            </select>
+            <button class="btn neon-btn" onclick="loadRevokeElectionsList()">
+              <i class="fas fa-sync"></i> Refresh
+            </button>
+          </div>
+        </div>
+        
+        <!-- Elections List -->
+        <div id="revokeElectionsList">
+          <!-- Will be populated by JavaScript -->
+        </div>
       </div>
       
       <!-- Invite Analytics Tab (for future use) -->

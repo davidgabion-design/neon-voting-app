@@ -391,6 +391,8 @@
   "positions": "Positions",
   "reject": "Reject",
   "revoke": "Revoke",
+  "revoke_elections": "Revoke Elections",
+  "revoke_elections_desc": "Revoke active or completed elections in case of security breaches or irregularities. This action is irreversible.",
   "view_only": "View Only",
   "no_approval_requests": "No Approval Requests",
   "no_approval_requests_desc": "No organizations have requested approval yet.",

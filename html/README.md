@@ -33,7 +33,7 @@ html/
 Components are loaded using `js/utils/html-loader.js`:
 
 ```javascript
-import { loadHTMLComponents } from "./js/utils/html-loader.js";
+import { loadHTMLComponents } from "/js/utils/html-loader.js";
 
 // Load all components on app init
 await loadHTMLComponents([

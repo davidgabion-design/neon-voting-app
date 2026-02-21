@@ -1,152 +1,4 @@
 /**
- * Voter Module - Login
- * Handles voter authentication and credential management
- */
-
-import { db } from '../config/firebase.js';
-import { collection, doc, getDoc, getDocs, query, where } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js';
-import { 
-  validateEmail, 
-  normalizeEmailAddr, 
-  normalizePhoneE164,
-  normalizeOrgVoterId,
-  buildVoterDocIdFromCredential 
-} from '../utils/validation.js';
-import { showToast, showScreen, createModal } from '../utils/ui-helpers.js';
-import { updateSession } from '../utils/session.js';
-import { safeJsonParse, getStorageJson, setStorageJson } from '../utils/json-helpers.js';
-import { writeAudit } from '../features/audit.js';
-import { loadVotingBallot } from './voting.js';
-import { showVoterLiveDashboard } from './results.js';
-import { getCredentialType, validateCredential, buildVoterDocId } from '../config/credential-types.js';
-
-/**
- * VOTER SESSION MANAGEMENT
- * Uses localStorage (persistent across component loads) + window object (in-memory)
- */
-
-const SESSION_KEY = 'neon_voter_session';
-const SESSION_DURATION = 30 * 60 * 1000; // 30 minutes
-
-/**
- * Save voter session to localStorage and window
- */
-export function saveVoterSession(orgId, voterDocId, voterData) {
-  if (!orgId || !voterDocId) {
-    console.error('[saveVoterSession] Invalid parameters:', { orgId, voterDocId });
-    return false;
-  }
-
-  const sessionData = {
-    orgId: String(orgId),
-    voterDocId: String(voterDocId),
-    voterName: voterData?.name || 'Voter',
-    voterEmail: voterData?.email || '',
-    voterPhone: voterData?.phone || '',
-    loginTimestamp: Date.now(),
-    expiresAt: Date.now() + SESSION_DURATION
-  };
-
-  try {
-    // Store in localStorage (persists across component loads)
-    localStorage.setItem(SESSION_KEY, JSON.stringify(sessionData));
-    
-    // Store in window object (fast access)
-    window.neonVoterSession = sessionData;
-    
-    console.log('[saveVoterSession] ✅ Session saved:', {
-      orgId: sessionData.orgId,
-      voterDocId: sessionData.voterDocId,
-      expiresAt: new Date(sessionData.expiresAt).toLocaleTimeString()
-    });
-
-    return true;
-  } catch (err) {
-    console.error('[saveVoterSession] Failed to save session:', err);
-    return false;
-  }
-}
-
-/**
- * Load voter session from localStorage/window
- */
-export function loadVoterSession() {
-  // Priority 1: Check window object (fastest)
-  if (window.neonVoterSession) {
-    const session = window.neonVoterSession;
-    if (session.expiresAt && session.expiresAt > Date.now()) {
-      return session;
-    } else {
-      console.log('[loadVoterSession] ⚠️ Window session expired');
-    }
-  }
-
-  // Priority 2: Check localStorage
-  try {
-    const session = getStorageJson(SESSION_KEY, null);
-    if (session) {
-      // Validate session structure
-      if (!session.orgId || !session.voterDocId || !session.expiresAt) {
-        console.error('[loadVoterSession] Invalid session structure:', session);
-        clearVoterSession();
-        return null;
-      }
-
-      // Check expiry
-      if (session.expiresAt > Date.now()) {
-        console.log('[loadVoterSession] ✅ Restored from localStorage:', session.voterDocId);
-        
-        // Hydrate window object
-        window.neonVoterSession = session;
-        return session;
-      } else {
-        console.log('[loadVoterSession] ⚠️ localStorage session expired');
-        clearVoterSession();
-      }
-    }
-  } catch (err) {
-    console.error('[loadVoterSession] Failed to parse localStorage session:', err);
-    clearVoterSession();
-  }
-
-  console.log('[loadVoterSession] ❌ No valid session found');
-  return null;
-}
-
-/**
- * Clear voter session from all storage
- */
-export function clearVoterSession() {
-  try {
-    localStorage.removeItem(SESSION_KEY);
-    delete window.neonVoterSession;
-    if (typeof sessionStorage !== 'undefined') {
-      sessionStorage.removeItem('voterAuthUid');
-    }
-    console.log('[clearVoterSession] ✅ Session cleared');
-  } catch (err) {
-    console.error('[clearVoterSession] Error:', err);
-  }
-}
-
-/**
- * Extend session expiry (called on user activity)
- */
-export function extendVoterSession() {
-  const session = loadVoterSession();
-  if (session) {
-    session.expiresAt = Date.now() + SESSION_DURATION;
-    try {
-      localStorage.setItem(SESSION_KEY, JSON.stringify(session));
-      window.neonVoterSession = session;
-      console.log('[extendVoterSession] ✅ Session extended to:', new Date(session.expiresAt).toLocaleTimeString());
-    } catch (err) {
-      console.error('[extendVoterSession] Failed:', err);
-    }
-  }
-}
-
-/**
  * Show OTP input and handle validation
  * @param {string} orgId
  * @param {string} voterDocId
@@ -212,28 +64,27 @@ window.validateVoterOTP = async function(orgId, voterDocId) {
     showToast('OTP validated! Logging you in...', 'success');
     
     // Continue with login flow - fetch voter and org data
-    let orgData, voterData;
     try {
       const orgDoc = await getDoc(doc(db, 'organizations', orgId));
       if (!orgDoc.exists()) {
         showToast('Organization not found', 'error');
         return;
       }
-      orgData = orgDoc.data();
+      const orgData = orgDoc.data();
+      
+      // Check if election has ended
+      if (orgData.electionStatus === 'ended') {
+        showToast('Voting has ended for this election', 'error');
+        return;
+      }
       
       const voterDoc = await getDoc(doc(db, 'organizations', orgId, 'voters', voterDocId));
       if (!voterDoc.exists()) {
         showToast('Voter not found', 'error');
         return;
       }
-      voterData = voterDoc.data();
-    } catch (dbErr) {
-      console.error('Database error during voter login:', dbErr);
-      showToast('Unable to connect to database. Please check your connection.', 'error');
-      return;
-    }
-    
-    try {
+      const voterData = voterDoc.data();
+      
       // Check if voter is replaced
       if (voterData.isReplaced) {
         showToast('This voter account has been replaced. Contact EC.', 'error');
@@ -255,7 +106,7 @@ window.validateVoterOTP = async function(orgId, voterDocId) {
         return;
       }
       
-      // Successful login - save session and load ballot
+      // Successful login - load ballot
       window.currentOrgId = orgId;
       window.currentOrgData = orgData;
       window.voterData = voterData;
@@ -264,9 +115,6 @@ window.validateVoterOTP = async function(orgId, voterDocId) {
       sessionStorage.setItem('voterOrgId', orgId);
       sessionStorage.setItem('voterDocId', voterDocId);
       sessionStorage.setItem('voterData', JSON.stringify(voterData));
-      
-      // ✅ Save to localStorage for component persistence
-      saveVoterSession(orgId, voterDocId, voterData);
       
       await writeAudit(
         orgId,
@@ -318,6 +166,27 @@ window.resendVoterOTP = async function(orgId, voterDocId) {
   }
 };
 
+/**
+ * Voter Module - Login
+ * Handles voter authentication and credential management
+ */
+
+import { db } from '../config/firebase.js';
+import { collection, doc, getDoc, getDocs, query, where } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js';
+import { 
+  validateEmail, 
+  normalizeEmailAddr, 
+  normalizePhoneE164,
+  normalizeOrgVoterId,
+  buildVoterDocIdFromCredential 
+} from '../utils/validation.js';
+import { showToast, showScreen, createModal } from '../utils/ui-helpers.js';
+import { updateSession } from '../utils/session.js';
+import { writeAudit } from '../features/audit.js';
+import { loadVotingBallot } from './voting.js';
+import { showVoterLiveDashboard } from './results.js';
+import { getCredentialType, validateCredential, buildVoterDocId } from '../config/credential-types.js';
+
 // Module state
 let voterSession = null;
 
@@ -343,10 +212,7 @@ export async function updateVoterLoginScreen() {
         credType = getCredentialType(orgDoc.data().credentialType || 'email_phone');
         orgName = orgDoc.data().name || '';
       }
-    } catch (dbErr) {
-      console.warn('Failed to fetch org credential type:', dbErr);
-      // Continue with default credential type
-    }
+    } catch (e) {
       console.error('Error fetching org credential type:', e);
     }
   }
@@ -508,21 +374,14 @@ export async function updateCredentialFieldsForOrg() {
   const orgId = document.getElementById('voterOrgId')?.value.trim();
   if (!orgId) return;
   
-  let orgData;
   try {
     const orgDoc = await getDoc(doc(db, 'organizations', orgId));
     if (!orgDoc.exists()) {
       showToast('Organization not found', 'error');
       return;
     }
-    orgData = orgDoc.data();
-  } catch (dbErr) {
-    console.error('Database error fetching org:', dbErr);
-    showToast('Unable to verify organization. Please check your connection.', 'error');
-    return;
-  }
-  
-  try {
+    
+    const orgData = orgDoc.data();
     const credType = getCredentialType(orgData.credentialType || 'email_phone');
     
     // Update credential field dynamically
@@ -636,21 +495,21 @@ export async function loginVoterWithCredential() {
     showToast('Verifying credentials...', 'info');
     
     // Fetch organization
-    let orgData;
-    try {
-      const orgDoc = await getDoc(doc(db, 'organizations', orgId));
-      if (!orgDoc.exists()) {
-        showToast('Organization not found', 'error');
-        return;
-      }
-      orgData = orgDoc.data();
-    } catch (dbErr) {
-      console.error('Database error fetching organization:', dbErr);
-      showToast('Unable to connect to database. Please check your connection.', 'error');
+    const orgDoc = await getDoc(doc(db, 'organizations', orgId));
+    if (!orgDoc.exists()) {
+      showToast('Organization not found', 'error');
       return;
     }
+    
+    const orgData = orgDoc.data();
     const credentialTypeId = orgData.credentialType || 'email_phone';
     const credType = getCredentialType(credentialTypeId);
+    
+    // Check if voting has ended
+    if (orgData.electionStatus === 'ended' || orgData.electionStatus === 'declared') {
+      showToast('Voting has ended for this election', 'error');
+      return;
+    }
     
     // Check organization approval status
     if (orgData.isDeleted) {
@@ -708,21 +567,13 @@ export async function loginVoterWithCredential() {
     }
     
     // Fetch voter document
-    let voterDoc;
-    try {
-      voterDoc = await getDoc(doc(db, 'organizations', orgId, 'voters', voterDocId));
-      
-      // Fallback: Try old tel: format for phone numbers (backward compatibility)
-      if (!voterDoc.exists() && !primaryCredential.includes('@')) {
-        const legacyPhone = primaryCredential.replace(/\D/g, '');
-        const legacyDocId = encodeURIComponent('tel:' + legacyPhone);
-        voterDoc = await getDoc(doc(db, 'organizations', orgId, 'voters', legacyDocId));
-      }
-    } catch (dbErr) {
-      console.error('Database error fetching voter:', dbErr);
-      showToast('Unable to verify voter credentials. Please check your connection.', 'error');
-      return;
-    }
+    let voterDoc = await getDoc(doc(db, 'organizations', orgId, 'voters', voterDocId));
+    
+    // Fallback: Try old tel: format for phone numbers (backward compatibility)
+    if (!voterDoc.exists() && !primaryCredential.includes('@')) {
+      const legacyPhone = primaryCredential.replace(/\D/g, '');
+      const legacyDocId = encodeURIComponent('tel:' + legacyPhone);
+      voterDoc = await getDoc(doc(db, 'organizations', orgId, 'voters', legacyDocId));
       
       if (!voterDoc.exists()) {
         showToast(`No voter found with this ${credType.primaryLabel}`, 'error');
@@ -931,20 +782,13 @@ export async function loginVoterOrgCredential() {
     showToast('Verifying your credentials...', 'info');
 
     // Load organization document
-    let org;
-    try {
-      const orgRef = doc(db, "organizations", orgId);
-      const orgSnap = await getDoc(orgRef);
-      if (!orgSnap.exists()) {
-        showToast('Organization not found. Please check your Organization ID.', 'error');
-        return;
-      }
-      org = { id: orgSnap.id, ...(orgSnap.data() || {}) };
-    } catch (dbErr) {
-      console.error('Database error fetching organization:', dbErr);
-      showToast('Unable to connect to database. Please check your connection.', 'error');
+    const orgRef = doc(db, "organizations", orgId);
+    const orgSnap = await getDoc(orgRef);
+    if (!orgSnap.exists()) {
+      showToast('Organization not found. Please check your Organization ID.', 'error');
       return;
     }
+    const org = { id: orgSnap.id, ...(orgSnap.data() || {}) };
 
     // 2) Approval/enabled checks
     if (org.isDeleted) {
@@ -1088,15 +932,8 @@ export async function findVoterByEmailOrPhone(orgId, credential) {
     if (!docId) return { found: false };
 
     // 1) Direct lookup (fast path, Option 3 style IDs)
-    let directSnap;
-    try {
-      const directRef = doc(db, "organizations", orgId, "voters", docId);
-      directSnap = await getDoc(directRef);
-    } catch (dbErr) {
-      console.error('Database error during voter lookup:', dbErr);
-      return { found: false, error: 'Database connection error' };
-    }
-    
+    const directRef = doc(db, "organizations", orgId, "voters", docId);
+    const directSnap = await getDoc(directRef);
     if (directSnap.exists()) {
       const voter = directSnap.data() || {};
       return {
@@ -1250,11 +1087,7 @@ export async function restoreVoterSession() {
       return false; // No session to restore
     }
 
-    const voterData = safeJsonParse(voterDataStr, null);
-    if (!voterData) {
-      console.warn('[restoreVoterSession] Invalid voter data in sessionStorage');
-      return false;
-    }
+    const voterData = JSON.parse(voterDataStr);
 
     // If voter is in readonly mode (has already voted), show dashboard
     if (voterViewMode === 'readonly' && voterData.hasVoted) {
@@ -1323,8 +1156,3 @@ if (typeof window !== 'undefined') {
     }
   });
 }
-
-// Expose session management functions globally
-window.loadVoterSession = loadVoterSession;
-window.clearVoterSession = clearVoterSession;
-window.extendVoterSession = extendVoterSession;

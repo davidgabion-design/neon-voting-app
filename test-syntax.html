@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Syntax Test</title>
+</head>
+<body>
+  <h1>JavaScript Syntax Test</h1>
+  <div id="results"></div>
+  
+  <script type="module">
+    const results = document.getElementById('results');
+    
+    async function testModules() {
+      const modules = [
+        '/js/config/firebase.js',
+        '/js/utils/ui-helpers.js',
+        '/js/voter/index.js',
+        '/js/ec/index.js',
+        '/js/admin/index.js',
+        '/js/super-admin/index.js',
+        '/js/invites/index.js',
+        '/js/reports/index.js',
+        '/js/shared/index.js'
+      ];
+      
+      for (const modulePath of modules) {
+        try {
+          await import(modulePath);
+          results.innerHTML += `<div style="color:green">✓ ${modulePath}</div>`;
+        } catch (err) {
+          results.innerHTML += `<div style="color:red">✗ ${modulePath}<br>&nbsp;&nbsp;${err.message}</div>`;
+          console.error(`Error in ${modulePath}:`, err);
+        }
+      }
+      
+      results.innerHTML += '<br><h3>Check browser console for detailed errors</h3>';
+    }
+    
+    testModules();
+  </script>
+</body>
+</html>

@@ -159,7 +159,7 @@ export async function sendECInvite(orgId, orgName, ecPassword) {
       appUrl
     });
 
-    const response = await fetch('/.netlify/functions/send-invite', {
+    const response = await fetch('/api/send-invite', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -176,7 +176,14 @@ export async function sendECInvite(orgId, orgName, ecPassword) {
       })
     });
     
-    const result = await response.json();
+    let result;
+    try {
+      result = await response.json();
+    } catch (parseError) {
+      console.error('Failed to parse EC invite response as JSON');
+      showToast('Server returned invalid response. Email service may not be configured.', 'error');
+      return;
+    }
     
     if (result.ok) {
       showToast(`✅ EC invite sent to ${email}`, 'success');
@@ -254,9 +261,9 @@ export async function sendECInviteSMS(orgId, orgName, ecPassword) {
     const message = `Hi ${ecName}! You've been assigned as Election Commissioner for ${orgName}. Login: ${appUrl}?role=ec&org=${orgId} | Org ID: ${orgId} | Password: ${ecPassword}${customMessage ? ' | ' + customMessage : ''}`;
     
     console.log('SMS message:', message);
-    console.log('Calling SMS function at: /.netlify/functions/send-invite-sms');
+    console.log('Calling SMS function at: /api/send-sms');
     
-    const response = await fetch('/.netlify/functions/send-invite-sms', {
+    const response = await fetch('/api/send-sms', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -276,7 +283,14 @@ export async function sendECInviteSMS(orgId, orgName, ecPassword) {
       throw new Error(`HTTP ${response.status}: ${errorText}`);
     }
     
-    const result = await response.json();
+    let result;
+    try {
+      result = await response.json();
+    } catch (parseError) {
+      console.error('Failed to parse SMS response as JSON');
+      showToast('Server returned invalid response. SMS service may not be configured.', 'error');
+      return;
+    }
     console.log('SMS Result:', result);
     
     if (result.ok) {
@@ -364,7 +378,7 @@ export async function sendECInviteWhatsApp(orgId, orgName, ecPassword) {
     const appUrl = window.location.origin;
     const loginLink = `${appUrl}?role=ec&org=${orgId}&pwd=${encodeURIComponent(ecPassword)}`;
     
-    console.log('Calling WhatsApp function at: /.netlify/functions/send-whatsapp');
+    console.log('Calling WhatsApp function at: /api/send-whatsapp');
     
     const payload = {
       type: 'ec',
@@ -378,7 +392,7 @@ export async function sendECInviteWhatsApp(orgId, orgName, ecPassword) {
     
     console.log('📱 WhatsApp Payload:', JSON.stringify(payload, null, 2));
     
-    const response = await fetch('/.netlify/functions/send-whatsapp', {
+    const response = await fetch('/api/send-whatsapp', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
@@ -392,7 +406,14 @@ export async function sendECInviteWhatsApp(orgId, orgName, ecPassword) {
       throw new Error(`HTTP ${response.status}: ${errorText}`);
     }
     
-    const result = await response.json();
+    let result;
+    try {
+      result = await response.json();
+    } catch (parseError) {
+      console.error('Failed to parse WhatsApp response as JSON');
+      showToast('Server returned invalid response. WhatsApp service may not be configured.', 'error');
+      return;
+    }
     console.log('WhatsApp Result:', result);
     
     if (result.success) {
@@ -461,7 +482,7 @@ export async function sendECInviteEmail(orgId, orgName, ecPassword, email, ecNam
       appUrl
     });
 
-    const response = await fetch('/.netlify/functions/send-invite', {
+    const response = await fetch('/api/send-invite', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -478,7 +499,14 @@ export async function sendECInviteEmail(orgId, orgName, ecPassword, email, ecNam
       })
     });
     
-    const result = await response.json();
+    let result;
+    try {
+      result = await response.json();
+    } catch (parseError) {
+      console.error('Failed to parse EC email response as JSON');
+      showToast('Server returned invalid response. Email service may not be configured.', 'error');
+      return;
+    }
     
     if (result.ok) {
       showToast(`✅ Credentials sent to ${email}`, 'success');

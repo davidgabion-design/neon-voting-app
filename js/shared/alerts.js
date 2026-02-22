@@ -97,7 +97,7 @@ export async function send30MinAlerts() {
 
       if (validateEmail(voterEmail)) {
         try {
-          const emailResponse = await fetch("/.netlify/functions/send-invite", {
+          const emailResponse = await fetch("/api/send-invite", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -147,7 +147,7 @@ export async function send30MinAlerts() {
             alertType: '30min'
           });
           
-          const smsResponse = await fetch("/.netlify/functions/send-invite-sms", {
+          const smsResponse = await fetch("/api/send-invite-sms", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -221,7 +221,7 @@ export async function sendVoteStartAlerts() {
 
       if (validateEmail(voterEmail)) {
         try {
-          const emailResponse = await fetch("/.netlify/functions/send-invite", {
+          const emailResponse = await fetch("/api/send-invite", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -271,7 +271,7 @@ export async function sendVoteStartAlerts() {
             alertType: 'start'
           });
           
-          const smsResponse = await fetch("/.netlify/functions/send-invite-sms", {
+          const smsResponse = await fetch("/api/send-invite-sms", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({

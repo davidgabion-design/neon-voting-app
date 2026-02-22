@@ -163,7 +163,7 @@ export async function sendBulkVoterInvites() {
             appUrl
           });
 
-          response = await fetch("/.netlify/functions/send-invite", {
+          response = await fetch("/api/send-invite", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -205,7 +205,7 @@ export async function sendBulkVoterInvites() {
             appUrl
           });
           phoneToStore = formattedPhone; // Store formatted phone
-          response = await fetch("/.netlify/functions/send-invite-sms", {
+          response = await fetch("/api/send-invite-sms", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -244,7 +244,7 @@ export async function sendBulkVoterInvites() {
           const appUrl = window.location.origin;
           const votingLink = `${appUrl}?role=voter&org=${window.currentOrgId}`;
           phoneToStore = formattedPhone; // Store formatted phone
-          response = await fetch("/.netlify/functions/send-whatsapp", {
+          response = await fetch("/api/send-whatsapp", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({

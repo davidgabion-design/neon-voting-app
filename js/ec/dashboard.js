@@ -14,31 +14,66 @@ export function renderECApprovalStatus(org) {
   // ⚠️ PRIORITY CHECK: Revoked election
   if (org.electionStatus === 'revoked') {
     const revokedDate = org.revokedAt?.toDate ? org.revokedAt.toDate() : (org.revokedAt?.seconds ? new Date(org.revokedAt.seconds * 1000) : null);
-    banner.innerHTML = `
-      <div class="status-banner revoked" style="margin:15px 0;padding:20px;border-radius:12px;background:rgba(255,68,68,0.2);border:3px solid #ff4444;display:flex;align-items:center;gap:15px;">
-        <div style="font-size:48px;color:#ff4444">
-          <i class="fas fa-ban"></i>
-        </div>
-        <div style="flex:1">
-          <div style="font-size:20px;font-weight:bold;color:#ff4444;margin-bottom:8px">
-            🚫 ELECTION REVOKED
+    const allowCorrections = org.allowCorrections === true;
+    
+    if (allowCorrections) {
+      // Revoked with correction permission
+      banner.innerHTML = `
+        <div class="status-banner revoked-editable" style="margin:15px 0;padding:20px;border-radius:12px;background:rgba(255,152,0,0.15);border:3px solid #ff9800;display:flex;align-items:center;gap:15px;">
+          <div style="font-size:48px;color:#ff9800">
+            <i class="fas fa-exclamation-triangle"></i>
           </div>
-          <div style="color:#eaf2ff;font-size:15px;margin-bottom:8px">
-            This election has been permanently revoked by SuperAdmin. All voting has been stopped.
-          </div>
-          ${org.revokedReason ? `
-            <div style="padding:12px;background:rgba(255,68,68,0.25);border-radius:8px;border-left:4px solid #ff4444;margin-bottom:8px">
-              <div style="color:#ff9999;font-size:13px;font-weight:bold;margin-bottom:4px">Reason for Revocation:</div>
-              <div style="color:#fff;font-size:14px">${org.revokedReason}</div>
+          <div style="flex:1">
+            <div style="font-size:20px;font-weight:bold;color:#ff9800;margin-bottom:8px">
+              ⚠️ ELECTION REVOKED - CORRECTIONS ALLOWED
             </div>
-          ` : ''}
-          <div style="color:rgba(255,153,153,0.8);font-size:13px;margin-top:8px">
-            ${org.revokedBy ? `Revoked by: ${org.revokedBy}` : ''}
-            ${revokedDate ? ` • ${revokedDate.toLocaleString()}` : ''}
+            <div style="color:#eaf2ff;font-size:15px;margin-bottom:8px">
+              Your election was revoked but you can make corrections and resubmit for approval.
+            </div>
+            ${org.revokedReason ? `
+              <div style="padding:12px;background:rgba(255,152,0,0.2);border-radius:8px;border-left:4px solid #ff9800;margin-bottom:12px">
+                <div style="color:#ffb74d;font-size:13px;font-weight:bold;margin-bottom:4px">Reason for Revocation:</div>
+                <div style="color:#fff;font-size:14px">${org.revokedReason}</div>
+              </div>
+            ` : ''}
+            <div style="color:rgba(255,183,77,0.8);font-size:13px;margin-bottom:12px">
+              ${org.revokedBy ? `Revoked by: ${org.revokedBy}` : ''}
+              ${revokedDate ? ` • ${revokedDate.toLocaleString()}` : ''}
+            </div>
+            <button onclick="window.enableElectionEditing?.()" class="btn" style="background:#ff9800;color:#fff;border:none;">
+              <i class="fas fa-edit"></i> Make Corrections & Resubmit
+            </button>
           </div>
         </div>
-      </div>
-    `;
+      `;
+    } else {
+      // Permanent revocation
+      banner.innerHTML = `
+        <div class="status-banner revoked" style="margin:15px 0;padding:20px;border-radius:12px;background:rgba(255,68,68,0.2);border:3px solid #ff4444;display:flex;align-items:center;gap:15px;">
+          <div style="font-size:48px;color:#ff4444">
+            <i class="fas fa-ban"></i>
+          </div>
+          <div style="flex:1">
+            <div style="font-size:20px;font-weight:bold;color:#ff4444;margin-bottom:8px">
+              🚫 ELECTION PERMANENTLY REVOKED
+            </div>
+            <div style="color:#eaf2ff;font-size:15px;margin-bottom:8px">
+              This election has been permanently revoked. No further changes allowed.
+            </div>
+            ${org.revokedReason ? `
+              <div style="padding:12px;background:rgba(255,68,68,0.25);border-radius:8px;border-left:4px solid #ff4444;margin-bottom:8px">
+                <div style="color:#ff9999;font-size:13px;font-weight:bold;margin-bottom:4px">Reason for Revocation:</div>
+                <div style="color:#fff;font-size:14px">${org.revokedReason}</div>
+              </div>
+            ` : ''}
+            <div style="color:rgba(255,153,153,0.8);font-size:13px;margin-top:8px">
+              ${org.revokedBy ? `Revoked by: ${org.revokedBy}` : ''}
+              ${revokedDate ? ` • ${revokedDate.toLocaleString()}` : ''}
+            </div>
+          </div>
+        </div>
+      `;
+    }
     banner.style.display = 'block';
     return;
   }
@@ -241,11 +276,58 @@ export async function showECTab(tabId) {
   } catch (e) {
     console.error("Error in showECTab:", e);
   }
+}/**
+ * Enable election editing after revocation with correction permission
+ * Changes status from 'revoked' to 'pending' for resubmission
+ */
+export async function enableElectionEditing() {
+  if (!window.currentOrgId) {
+    showToast('No organization loaded', 'error');
+    return;
+  }
+  
+  try {
+    const { getFirestore, doc, updateDoc, serverTimestamp } = await import('https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js');
+    const db = getFirestore();
+    const orgRef = doc(db, 'organizations', window.currentOrgId);
+    
+    // Preserve original revocation data for history
+    const revokedAtTimestamp = window.currentOrgData?.revokedAt?.toDate ? 
+      window.currentOrgData.revokedAt.toDate() : 
+      (window.currentOrgData?.revokedAt?.seconds ? new Date(window.currentOrgData.revokedAt.seconds * 1000) : new Date());
+    
+    // Change status from revoked to pending
+    await updateDoc(orgRef, {
+      electionStatus: 'pending',
+      resubmittedAt: serverTimestamp(),
+      resubmittedAfterRevocation: true,
+      // Keep revocation history for audit trail
+      previousRevocation: {
+        revokedAt: revokedAtTimestamp,
+        revokedBy: window.currentOrgData?.revokedBy || 'Unknown',
+        revokedReason: window.currentOrgData?.revokedReason || 'No reason provided',
+        allowedCorrections: window.currentOrgData?.allowCorrections === true
+      }
+      // Note: allowCorrections field will remain in document for history
+    });
+    
+    showToast('Election status changed to Pending. You can now make corrections and resubmit for approval.', 'success');
+    
+    // Wait a moment for Firestore to update, then reload the page to refresh UI
+    setTimeout(() => {
+      window.location.reload();
+    }, 1500);
+    
+  } catch (error) {
+    console.error('Error enabling election editing:', error);
+    showToast(`Failed to enable editing: ${error.message}`, 'error');
+  }
 }
 
 // Export to window for backwards compatibility
 if (typeof window !== 'undefined') {
   window.showECTab = showECTab;
+  window.enableElectionEditing = enableElectionEditing;
   
   // Listen for language changes and refresh current tab
   window.addEventListener('languageChanged', () => {

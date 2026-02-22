@@ -605,7 +605,7 @@ async function sendAdminInvites(name, email, phone, password, sendEmail, sendWha
         `
       };
       
-      const response = await fetch('/.netlify/functions/send-email', {
+      const response = await fetch('/api/send-email', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(emailPayload)
@@ -636,7 +636,7 @@ async function sendAdminInvites(name, email, phone, password, sendEmail, sendWha
         }
       };
       
-      const response = await fetch('/.netlify/functions/send-whatsapp', {
+      const response = await fetch('/api/send-whatsapp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(whatsappPayload)

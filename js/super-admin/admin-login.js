@@ -36,7 +36,7 @@ export async function loginAdmin() {
       showToast('Sending OTP...', 'info');
       const method = admin.phone ? 'sms' : 'email';
       const credential = admin.phone || admin.email;
-      const res = await fetch('/.netlify/functions/send-otp', {
+      const res = await fetch('/api/send-otp', {
         method: 'POST',
         body: JSON.stringify({ orgId: admin.orgId || 'global', userId: email, credential, method }),
         headers: { 'Content-Type': 'application/json' }
@@ -96,7 +96,7 @@ window.validateAdminOTP = async function(email, orgId) {
   }
   try {
     showToast('Validating OTP...', 'info');
-    const res = await fetch('/.netlify/functions/validate-otp', {
+    const res = await fetch('/api/validate-otp', {
       method: 'POST',
       body: JSON.stringify({ orgId, userId: email, otp }),
       headers: { 'Content-Type': 'application/json' }

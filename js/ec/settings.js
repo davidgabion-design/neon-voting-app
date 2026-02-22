@@ -23,6 +23,11 @@ export async function loadECSettings() {
   const endTime = org.electionSettings?.endTime || '';
   const declared = org.electionStatus === 'declared';
   
+  // Check if permanently revoked (no corrections allowed)
+  const permanentlyRevoked = org.electionStatus === 'revoked' && org.allowCorrections === false;
+  const disabledAttr = permanentlyRevoked ? 'disabled' : '';
+  const disabledStyle = permanentlyRevoked ? 'opacity:0.5;cursor:not-allowed;' : '';
+  
   let html = `
     <div style="display:flex;gap:8px;margin-bottom:20px;border-bottom:2px solid rgba(0,255,255,0.2);flex-wrap:wrap">
       <button class="settings-tab-btn active" onclick="switchSettingsTab('schedule')">
@@ -33,16 +38,24 @@ export async function loadECSettings() {
       </button>
     </div>
     
+    ${permanentlyRevoked ? `
+      <div style="padding:12px;background:rgba(255,68,68,0.2);border-radius:8px;border-left:4px solid #ff4444;margin-bottom:15px">
+        <div style="color:#ff9999;font-size:13px;font-weight:bold">
+          <i class="fas fa-ban"></i> Election permanently revoked - All editing disabled
+        </div>
+      </div>
+    ` : ''}
+    
     <div id="settingsTab-schedule" class="settings-tab-content">
       <div class="card">
         <h3><i class="fas fa-calendar-alt"></i> ${t('election_schedule')}</h3>
         <label class="label">${t('start_date_time')}</label>
-        <input id="ecStartTime" type="datetime-local" class="input" value="${startTime ? new Date(startTime).toISOString().slice(0,16) : ''}">
+        <input id="ecStartTime" type="datetime-local" class="input" value="${startTime ? new Date(startTime).toISOString().slice(0,16) : ''}" ${disabledAttr}>
         <label class="label">${t('end_date_time')}</label>
-        <input id="ecEndTime" type="datetime-local" class="input" value="${endTime ? new Date(endTime).toISOString().slice(0,16) : ''}">
+        <input id="ecEndTime" type="datetime-local" class="input" value="${endTime ? new Date(endTime).toISOString().slice(0,16) : ''}" ${disabledAttr}>
         <div style="margin-top:10px;display:flex;gap:8px">
-          <button class="btn neon-btn" onclick="saveElectionSchedule()" style="flex:1">${t('save_schedule')}</button>
-          <button class="btn neon-btn-outline" onclick="clearElectionSchedule()" style="flex:1">${t('clear')}</button>
+          <button class="btn neon-btn" onclick="saveElectionSchedule()" style="flex:1;${disabledStyle}" ${disabledAttr}>${t('save_schedule')}</button>
+          <button class="btn neon-btn-outline" onclick="clearElectionSchedule()" style="flex:1;${disabledStyle}" ${disabledAttr}>${t('clear')}</button>
         </div>
         ${startTime ? `
           <div class="subtext" style="margin-top:10px;padding:8px;background:rgba(0,255,255,0.05);border-radius:8px">
@@ -55,10 +68,10 @@ export async function loadECSettings() {
         <h3><i class="fas fa-bell"></i> ${t('send_voter_alerts')}</h3>
         <p class="subtext">${t('send_alerts_to_voters')}</p>
         <div style="display:flex;gap:8px;margin-top:10px">
-          <button class="btn neon-btn-outline" onclick="send30MinAlerts()" style="flex:1">
+          <button class="btn neon-btn-outline" onclick="send30MinAlerts()" style="flex:1;${disabledStyle}" ${disabledAttr}>
             <i class="fas fa-clock"></i> ${t('min_alert')}
           </button>
-          <button class="btn neon-btn-outline" onclick="sendVoteStartAlerts()" style="flex:1">
+          <button class="btn neon-btn-outline" onclick="sendVoteStartAlerts()" style="flex:1;${disabledStyle}" ${disabledAttr}>
             <i class="fas fa-play"></i> ${t('start_alert')}
           </button>
         </div>
@@ -68,10 +81,10 @@ export async function loadECSettings() {
         <h3><i class="fas fa-exclamation-triangle"></i> ${t('danger_zone')}</h3>
         <p class="subtext">${t('reset_or_clear')}</p>
         <div style="margin-top:10px">
-          <button class="btn btn-danger" onclick="resetVotesConfirm()" style="width:100%;margin-bottom:10px">
+          <button class="btn btn-danger" onclick="resetVotesConfirm()" style="width:100%;margin-bottom:10px;${disabledStyle}" ${disabledAttr}>
             <i class="fas fa-undo"></i> ${t('reset_all_votes')}
           </button>
-          <button class="btn btn-danger" onclick="clearAllDataConfirm()" style="width:100%">
+          <button class="btn btn-danger" onclick="clearAllDataConfirm()" style="width:100%;${disabledStyle}" ${disabledAttr}>
             <i class="fas fa-trash-alt"></i> ${t('clear_all_election_data')}
           </button>
         </div>

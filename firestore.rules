@@ -73,10 +73,6 @@ service cloud.firestore {
       
       // Allow delete for cleanup (in production, restrict to SuperAdmin)
       allow delete: if true;
-      allow create: if true;
-      
-      // Allow delete for cleanup (in production, restrict to SuperAdmin)
-      allow delete: if true;
 
       // ✅ Voters subcollection - ECs can always manage voters (even after approval)
       match /voters/{voterId} {

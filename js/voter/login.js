@@ -51,7 +51,7 @@ window.validateVoterOTP = async function(orgId, voterDocId) {
   }
   try {
     showToast('Validating OTP...', 'info');
-    const res = await fetch('/.netlify/functions/validate-otp', {
+    const res = await fetch('/api/validate-otp', {
       method: 'POST',
       body: JSON.stringify({ orgId, userId: voterDocId, otp }),
       headers: { 'Content-Type': 'application/json' }
@@ -150,7 +150,7 @@ window.resendVoterOTP = async function(orgId, voterDocId) {
       return;
     }
     
-    const res = await fetch('/.netlify/functions/send-otp', {
+    const res = await fetch('/api/send-otp', {
       method: 'POST',
       body: JSON.stringify({ orgId, userId: voterDocId, credential: savedCredential, method: savedMethod }),
       headers: { 'Content-Type': 'application/json' }
@@ -547,7 +547,7 @@ export async function loginVoterWithCredential() {
       sessionStorage.setItem('voterOTPMethod', method);
       sessionStorage.setItem('voterOTPCredential', credential);
       
-      const res = await fetch('/.netlify/functions/send-otp', {
+      const res = await fetch('/api/send-otp', {
         method: 'POST',
         body: JSON.stringify({ orgId, userId: voterDocId, credential, method }),
         headers: { 'Content-Type': 'application/json' }

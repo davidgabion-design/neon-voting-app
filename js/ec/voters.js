@@ -38,7 +38,11 @@ export async function loadECVoters() {
     const t = window.t || ((key) => key);
     
     // Check if editing is locked
-    const editLocked = window.currentOrgData && (window.currentOrgData.approval?.status === 'pending' || window.currentOrgData.approval?.status === 'approved');
+    const editLocked = window.currentOrgData && (
+      window.currentOrgData.approval?.status === 'pending' || 
+      window.currentOrgData.approval?.status === 'approved' ||
+      (window.currentOrgData.electionStatus === 'revoked' && window.currentOrgData.allowCorrections === false)
+    );
     const lockChip = editLocked ? '<i class="fas fa-lock" style="margin-left:4px;opacity:0.7;font-size:12px" title="Editing locked"></i>' : '';
     const lockStyle = editLocked ? 'opacity:0.6;cursor:not-allowed;' : '';
     

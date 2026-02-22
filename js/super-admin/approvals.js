@@ -140,7 +140,14 @@ export async function loadSuperApprovals() {
                   <img src="${org.logoUrl || getDefaultLogo(org.name)}" 
                        style="width:50px;height:50px;border-radius:10px;object-fit:cover;border:2px solid rgba(255,193,7,0.3);">
                   <div style="flex:1">
-                    <strong style="color:#fff">${escapeHtml(org.name || org.id)}</strong>
+                    <div style="display:flex;align-items:center;gap:8px">
+                      <strong style="color:#fff">${escapeHtml(org.name || org.id)}</strong>
+                      ${org.resubmittedAfterRevocation ? `
+                        <span class="badge" style="background:rgba(255,152,0,0.2);border:1px solid #ff9800;color:#ffb74d;font-size:11px;padding:2px 6px">
+                          <i class="fas fa-redo"></i> RESUBMITTED
+                        </span>
+                      ` : ''}
+                    </div>
                     <div class="subtext" style="margin-top:2px">ID: ${org.id}</div>
                     <div style="display:flex;gap:15px;margin-top:4px">
                       <span class="subtext" style="color:#00eaff"><i class="fas fa-users"></i> ${voterCount} <span data-i18n="voters">voters</span></span>
@@ -561,7 +568,7 @@ window.confirmRejection = async function(orgId) {
     try {
       const ecEmail = orgSnap.data()?.ecEmail;
       if (ecEmail) {
-        await fetch('/.netlify/functions/send-notification', {
+        await fetch('/api/send-notification', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({

@@ -263,7 +263,7 @@ export async function sendResultsNotifications(orgId, options = {}) {
             isCandidate: false
           });
           
-          const response = await fetch('/.netlify/functions/send-email', {
+          const response = await fetch('/api/send-email', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -311,7 +311,7 @@ export async function sendResultsNotifications(orgId, options = {}) {
             isCandidate: true
           });
           
-          const response = await fetch('/.netlify/functions/send-email', {
+          const response = await fetch('/api/send-email', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({

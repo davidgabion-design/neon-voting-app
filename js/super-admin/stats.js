@@ -473,13 +473,18 @@ function renderDashboardTables(orgs, metrics) {
         active: 'color:#0f0',
         scheduled: 'color:#ffa500',
         declared: 'color:#ff00ff',
-        ended: 'color:#999'
+        ended: 'color:#999',
+        revoked: 'color:#ff4444',
+        locked: 'color:#999',
+        pending: 'color:#ffa500',
+        draft: 'color:#aaa'
       };
       
       const approvalColors = {
         approved: 'color:#0f0',
         pending: 'color:#ffa500',
-        rejected: 'color:#f00'
+        rejected: 'color:#f00',
+        draft: 'color:#aaa'
       };
       
       html += `

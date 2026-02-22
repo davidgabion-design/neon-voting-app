@@ -11,8 +11,8 @@ const firebaseConfig = {
   // measurementId removed - Analytics disabled to prevent cookie errors
 };
 
-// Set APP_URL for email invites - use production URL by default
-window.APP_URL = window.location.origin || "https://neon-voting-app.netlify.app";
+// Set APP_URL for email invites - Firebase Hosting URL
+window.APP_URL = window.location.origin || "https://neon-voting-app.web.app";
 
 // Export for use in script.js
 window.firebaseConfig = firebaseConfig;

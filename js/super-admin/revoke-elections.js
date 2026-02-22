@@ -259,6 +259,9 @@ function renderRevokeElectionsList() {
                 <div style="margin-top:12px;padding:10px;background:rgba(255,68,68,0.1);border-radius:6px;border:1px solid rgba(255,68,68,0.3)">
                   <div style="color:#ff9999;font-size:12px;margin-bottom:4px">
                     <i class="fas fa-ban"></i> <strong>REVOKED</strong>
+                    ${election.allowCorrections 
+                      ? '<span style="color:#ff9800;margin-left:8px"><i class="fas fa-edit"></i> Corrections Allowed</span>' 
+                      : '<span style="color:#ff4444;margin-left:8px"><i class="fas fa-lock"></i> Permanent</span>'}
                   </div>
                   ${election.revokedReason ? `
                     <div class="subtext" style="margin-top:4px">
@@ -273,6 +276,13 @@ function renderRevokeElectionsList() {
                   ${election.revokedBy ? `
                     <div class="subtext" style="margin-top:4px">
                       <i class="fas fa-user-shield"></i> By: ${escapeHtml(election.revokedBy)}
+                    </div>
+                  ` : ''}
+                  ${election.resubmittedAfterRevocation ? `
+                    <div style="margin-top:8px;padding:8px;background:rgba(255,152,0,0.2);border-radius:4px;border-left:3px solid #ff9800">
+                      <div style="color:#ffb74d;font-size:11px;font-weight:bold">
+                        <i class="fas fa-redo"></i> EC has resubmitted this election for re-approval
+                      </div>
                     </div>
                   ` : ''}
                 </div>
@@ -373,6 +383,21 @@ export function showRevokeElectionModal(orgId, orgName) {
           </div>
         </div>
         
+        <div style="margin-bottom:16px;padding:12px;background:rgba(0,234,255,0.05);border-radius:8px;border:1px solid rgba(0,234,255,0.2)">
+          <label style="display:flex;align-items:start;gap:8px;cursor:pointer">
+            <input type="checkbox" id="allowCorrectionsCheckbox" style="margin-top:4px">
+            <div>
+              <span style="color:#00eaff;font-size:14px;font-weight:600;display:block;margin-bottom:4px">
+                ✅ Allow EC to make corrections and resubmit for approval
+              </span>
+              <span style="color:#aaa;font-size:12px;display:block">
+                If checked: EC can edit election settings and resubmit<br>
+                If unchecked: Election permanently revoked, no edits allowed
+              </span>
+            </div>
+          </label>
+        </div>
+        
         <div style="margin-bottom:16px">
           <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
             <input type="checkbox" id="revokeConfirmCheckbox">
@@ -411,6 +436,7 @@ export function showRevokeElectionModal(orgId, orgName) {
 export async function confirmRevokeElection(orgId, orgName) {
   const reasonInput = document.getElementById('revokeReasonInput');
   const confirmCheckbox = document.getElementById('revokeConfirmCheckbox');
+  const allowCorrectionsCheckbox = document.getElementById('allowCorrectionsCheckbox');
   
   // Validate reason
   const reason = reasonInput?.value?.trim();
@@ -431,6 +457,9 @@ export async function confirmRevokeElection(orgId, orgName) {
     showToast('Please confirm you understand this action is irreversible', 'error');
     return;
   }
+  
+  // Get correction permission
+  const allowCorrections = allowCorrectionsCheckbox?.checked === true;
   
   // Final confirmation
   if (!confirm(`FINAL CONFIRMATION\n\nAre you absolutely sure you want to revoke "${orgName}"?\n\nThis will immediately stop all voting and cannot be undone.`)) {
@@ -459,7 +488,8 @@ export async function confirmRevokeElection(orgId, orgName) {
       revokedAt: serverTimestamp(),
       revokedBy: superAdminEmail,
       revokedReason: reason,
-      previousStatus: previousStatus
+      previousStatus: previousStatus,
+      allowCorrections: allowCorrections
     });
     
     // Log audit trail
@@ -572,8 +602,12 @@ export async function viewElectionDetails(orgId) {
                   <div class="subtext">Reason: ${escapeHtml(orgData.revokedReason)}</div>
                   <div class="subtext" style="margin-top:4px">
                     Revoked by ${escapeHtml(orgData.revokedBy || 'Unknown')} on ${formatDate(orgData.revokedAt, true)}
-                  </div>
-                ` : ''}
+                  </div>                  <div class="subtext" style="margin-top:4px">
+                    <i class="fas fa-${orgData.allowCorrections ? 'edit' : 'lock'}"></i> 
+                    ${orgData.allowCorrections 
+                      ? '<span style="color:#ff9800">EC can make corrections and resubmit</span>' 
+                      : '<span style="color:#ff4444">Permanently revoked - no corrections allowed</span>'}
+                  </div>                ` : ''}
               </div>
               <div>
                 ${orgData.approval?.status === 'approved' 

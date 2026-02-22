@@ -38,7 +38,7 @@ export async function sendVoterInvite(voterEmail, voterName, voterPhone) {
       appUrl
     });
 
-    const response = await fetch("/.netlify/functions/send-invite", {
+    const response = await fetch("/api/send-invite", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -64,7 +64,14 @@ export async function sendVoterInvite(voterEmail, voterName, voterPhone) {
     }
     
     const text = await response.text();
-    const result = text ? JSON.parse(text) : { ok: false, error: "Empty response" };
+    let result;
+    try {
+      result = text ? JSON.parse(text) : { ok: false, error: "Empty response" };
+    } catch (parseError) {
+      console.error("Failed to parse response as JSON:", text.substring(0, 200));
+      showToast("Server returned invalid response. Invite service may not be configured.", "error");
+      return;
+    }
     
     if (!result.ok) {
       showToast("Failed to send invitation: " + (result.error || "Unknown error"), "error");
@@ -141,7 +148,7 @@ export async function sendVoterInviteSMS(voterPhone, voterName) {
     
     showToast("Sending SMS invitation...", "info");
     
-    const response = await fetch("/.netlify/functions/send-invite-sms", {
+    const response = await fetch("/api/send-sms", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -165,7 +172,14 @@ export async function sendVoterInviteSMS(voterPhone, voterName) {
     }
     
     const text = await response.text();
-    const result = text ? JSON.parse(text) : { ok: false, error: "Empty response" };
+    let result;
+    try {
+      result = text ? JSON.parse(text) : { ok: false, error: "Empty response" };
+    } catch (parseError) {
+      console.error("Failed to parse SMS response as JSON:", text.substring(0, 200));
+      showToast("Server returned invalid response. SMS service may not be configured.", "error");
+      return;
+    }
     
     if (result.ok) {
       const inviteRef = collection(db, "organizations", window.currentOrgId, "invites");
@@ -243,7 +257,7 @@ export async function sendVoterInviteWhatsApp(voterPhone, voterName) {
     
     showToast("Sending WhatsApp invitation...", "info");
     
-    const response = await fetch("/.netlify/functions/send-whatsapp", {
+    const response = await fetch("/api/send-whatsapp", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -269,7 +283,14 @@ export async function sendVoterInviteWhatsApp(voterPhone, voterName) {
     }
     
     const text = await response.text();
-    const result = text ? JSON.parse(text) : { success: false, error: "Empty response" };
+    let result;
+    try {
+      result = text ? JSON.parse(text) : { success: false, error: "Empty response" };
+    } catch (parseError) {
+      console.error("Failed to parse WhatsApp response as JSON:", text.substring(0, 200));
+      showToast("Server returned invalid response. WhatsApp service may not be configured.", "error");
+      return;
+    }
     
     if (result.success) {
       const inviteRef = collection(db, "organizations", window.currentOrgId, "invites");
@@ -295,7 +316,7 @@ export async function sendVoterInviteWhatsApp(voterPhone, voterName) {
       if (result.status === 'queued' && result.sid) {
         setTimeout(async () => {
           try {
-            const pollRes = await fetch('/.netlify/functions/poll-twilio-status', {
+            const pollRes = await fetch('/api/poll-twilio-status', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ sid: result.sid })
@@ -364,7 +385,7 @@ export async function sendECInvite(orgId, orgName, ecPassword) {
       appUrl
     });
 
-    const response = await fetch('/.netlify/functions/send-invite', {
+    const response = await fetch('/api/send-invite', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -390,7 +411,14 @@ export async function sendECInvite(orgId, orgName, ecPassword) {
     }
     
     const text = await response.text();
-    const result = text ? JSON.parse(text) : { ok: false, error: 'Empty response' };
+    let result;
+    try {
+      result = text ? JSON.parse(text) : { ok: false, error: 'Empty response' };
+    } catch (parseError) {
+      console.error("Failed to parse EC invite response as JSON:", text.substring(0, 200));
+      showToast("Server returned invalid response. Email service may not be configured.", "error");
+      return;
+    }
     
     if (result.ok) {
       const inviteRef = collection(db, "organizations", orgId, "invites");

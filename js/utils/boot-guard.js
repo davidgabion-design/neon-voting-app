@@ -155,6 +155,29 @@ export function installGlobalGuards() {
 export async function cleanupOldServiceWorkersOnce() {
   try {
     if (!("serviceWorker" in navigator)) return;
+    
+    // Detect local development
+    const isLocalDev = 
+      window.location.hostname === 'localhost' || 
+      window.location.hostname === '127.0.0.1' ||
+      window.location.hostname.startsWith('192.168.') ||
+      window.location.port === '5500' ||
+      window.location.port === '8080' ||
+      window.location.port === '3000' ||
+      window.location.protocol === 'file:';
+    
+    // In local dev, ALWAYS cleanup (not just once)
+    // In production, only cleanup once
+    if (isLocalDev) {
+      const regs = await navigator.serviceWorker.getRegistrations();
+      if (regs?.length) {
+        await Promise.all(regs.map(r => r.unregister()));
+        console.log('🔧 Service Workers disabled (local development mode)');
+      }
+      return;
+    }
+    
+    // Production: cleanup only once
     if (localStorage.getItem(SW_CLEANUP_FLAG) === "1") return;
 
     const regs = await navigator.serviceWorker.getRegistrations();
